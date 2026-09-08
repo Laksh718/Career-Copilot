@@ -6,6 +6,8 @@ import 'home/home_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
+  static bool cancelNavigation = false;
+
   const SplashScreen({super.key});
 
   @override
@@ -21,13 +23,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Future<void> _navigateNext() async {
     await Future.delayed(const Duration(milliseconds: 1600));
-    if (!mounted) return;
+    if (!mounted || SplashScreen.cancelNavigation) return;
 
     final prefs = await SharedPreferences.getInstance();
     final seenOnboarding = prefs.getBool('seen_onboarding') ?? false;
     final destination = seenOnboarding ? const HomeScreen() : const OnboardingScreen();
 
-    if (mounted) {
+    if (mounted && !SplashScreen.cancelNavigation) {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(

@@ -178,6 +178,7 @@ class _AddOpportunityScreenState extends State<AddOpportunityScreen> {
       context,
       text,
       sourceName: 'Quick Auto-Add',
+      replaceRoute: true,
     );
   }
 

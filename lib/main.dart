@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import 'app/app.dart';
 import 'repositories/application_repository.dart';
@@ -21,6 +23,21 @@ void main() async {
 
   await NotificationService().init();
 
+  String? initialSharedText;
+  if (!kIsWeb) {
+    try {
+      final initialMedia = await ReceiveSharingIntent.instance.getInitialMedia();
+      for (final file in initialMedia) {
+        if (file.type == SharedMediaType.text || file.type == SharedMediaType.url) {
+          initialSharedText = file.path;
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error retrieving initial media: $e');
+    }
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -29,7 +46,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AIController(aiService)),
         ChangeNotifierProvider(create: (_) => ThemeController(prefs)),
       ],
-      child: const CareerCopilotApp(),
+      child: CareerCopilotApp(initialSharedText: initialSharedText),
     ),
   );
 }

@@ -10,9 +10,8 @@ import '../models/required_document.dart';
 import '../controllers/ai_controller.dart';
 import '../controllers/application_controller.dart';
 import '../controllers/reminder_controller.dart';
-import '../widgets/company_logo.dart';
 import '../screens/application_details/application_details_screen.dart';
-import '../screens/applications/applications_screen.dart';
+import '../screens/splash_screen.dart';
 
 class SharedIngestionService {
   static final SharedIngestionService _instance = SharedIngestionService._internal();
@@ -21,13 +20,19 @@ class SharedIngestionService {
 
   /// Automatically parses shared text (from email, WhatsApp, or clipboard),
   /// creates an Application, saves it to the database, schedules alarms,
-  /// and shows a confirmation sheet.
+  /// Automatically parses shared text (from email, WhatsApp, or clipboard),
+  /// creates an Application, saves it to the database, schedules alarms,
+  /// and directly opens the ApplicationDetailsScreen (no splash screen, no intermediate modal).
   Future<Application?> processAndAutoAdd(
     BuildContext context,
     String rawText, {
     String sourceName = 'Shared Message / Email',
+    bool replaceRoute = false,
   }) async {
     if (rawText.trim().isEmpty) return null;
+
+    // Suppress any pending splash screen navigation
+    SplashScreen.cancelNavigation = true;
 
     // Show parsing indicator dialog
     showDialog(
@@ -63,7 +68,7 @@ class SharedIngestionService {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Auto-Ingesting Shared Message',
+                  'Auto-Ingesting Opportunity',
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -71,7 +76,7 @@ class SharedIngestionService {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Copilot is extracting company, role, deadline, and scheduling alarms...',
+                  'Extracting company, role, deadline, and scheduling alarms...',
                   style: TextStyle(
                     fontSize: 12.5,
                     color: isDark ? Colors.white60 : Colors.black54,
@@ -103,8 +108,33 @@ class SharedIngestionService {
         // Automatically schedule an alarm/reminder if interview or deadline is present
         _autoScheduleAlarmIfApplicable(context, app);
 
-        // Present the Auto-Added Celebration Confirmation Modal
-        _showAutoAddedSuccessModal(context, app);
+        // Direct navigation to Application Details Screen (no splash, no modal)
+        final route = MaterialPageRoute(
+          builder: (_) => ApplicationDetailsScreen(application: app),
+        );
+        if (replaceRoute) {
+          Navigator.pushReplacement(context, route);
+        } else {
+          Navigator.push(context, route);
+        }
+
+        // Show floating celebration snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Auto-ingested ${app.company} (${app.role}) into your pipeline!'),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
       }
 
       return app;
@@ -272,267 +302,5 @@ class SharedIngestionService {
     // Default fallback: 3 days in future
     return now.add(const Duration(days: 3));
   }
-
-  void _showAutoAddedSuccessModal(BuildContext context, Application app) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E2638) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.14)
-                  : Colors.black.withValues(alpha: 0.08),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 30,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle
-              Container(
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 18),
-
-              // Success badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF10B981).withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.4),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'AUTOMATICALLY ADDED VIA SHARE',
-                      style: TextStyle(
-                        color: Color(0xFF10B981),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Company Logo & Details
-              Row(
-                children: [
-                  CompanyLogoWidget(
-                    company: app.company,
-                    category: app.category,
-                    size: 54,
-                    borderRadius: 16,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          app.company,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white60 : Colors.black54,
-                          ),
-                        ),
-                        Text(
-                          app.role,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : AppTheme.accentBlack,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: app.category.color.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            app.category.label,
-                            style: TextStyle(
-                              color: app.category.color,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Extracted Metadata highlights
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF151C2A) : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    if (app.interviewDate.isNotEmpty)
-                      _buildInfoRow(
-                        Icons.alarm_rounded,
-                        'Interview Alarm',
-                        '${app.interviewDate} ${app.interviewTime}',
-                        AppTheme.orange,
-                        isDark,
-                      ),
-                    if (app.deadline.isNotEmpty)
-                      _buildInfoRow(
-                        Icons.hourglass_top_rounded,
-                        'Application Deadline',
-                        app.deadline,
-                        const Color(0xFFEF4444),
-                        isDark,
-                      ),
-                    if (app.stipend.isNotEmpty)
-                      _buildInfoRow(
-                        Icons.payments_rounded,
-                        'Compensation',
-                        app.stipend,
-                        const Color(0xFF10B981),
-                        isDark,
-                      ),
-                    _buildInfoRow(
-                      Icons.hub_rounded,
-                      'Pipeline Status',
-                      app.status.name.toUpperCase(),
-                      const Color(0xFF3B82F6),
-                      isDark,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 22),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      icon: const Icon(Icons.layers_rounded, size: 18),
-                      label: const Text('View All Apps', style: TextStyle(fontWeight: FontWeight.w700)),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ApplicationsScreen()),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.orange,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 3,
-                      ),
-                      icon: const Icon(Icons.visibility_rounded, size: 18),
-                      label: const Text('Open Details', style: TextStyle(fontWeight: FontWeight.w800)),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ApplicationDetailsScreen(application: app),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildInfoRow(
-    IconData icon,
-    String title,
-    String value,
-    Color color,
-    bool isDark,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark ? Colors.white60 : Colors.black54,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12.5,
-              color: isDark ? Colors.white : AppTheme.accentBlack,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+
