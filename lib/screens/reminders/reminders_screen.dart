@@ -565,7 +565,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const AppLogo(size: 38, onDark: true),
+                                      const AppLogo(height: 44, width: 116),
                                       ElevatedButton.icon(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppTheme.orange,

@@ -162,7 +162,7 @@ class _AddOpportunityScreenState extends State<AddOpportunityScreen> {
                 // Header
                 Row(
                   children: [
-                    const AppLogo(size: 42),
+                    const AppLogo(size: 46, emblemOnly: true),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

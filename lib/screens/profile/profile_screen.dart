@@ -361,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const AppLogo(size: 36, onDark: true),
+                                    const AppLogo(height: 44, width: 116),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                       decoration: BoxDecoration(
@@ -709,7 +709,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const AppLogo(size: 42),
+                        AppLogo(
+                          height: 54,
+                          width: 130,
+                          onLight: !isDark,
+                        ),
                         const SizedBox(height: 10),
                         Text(
                           'Career Copilot',

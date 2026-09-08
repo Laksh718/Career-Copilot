@@ -347,7 +347,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const AppLogo(size: 36, onDark: true),
+                          const AppLogo(size: 42, emblemOnly: true),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(

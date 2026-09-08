@@ -277,7 +277,7 @@ Tracked with Career Copilot
                           ),
                         ),
                         const SizedBox(width: 10),
-                        const AppLogo(size: 34),
+                        const AppLogo(size: 38, emblemOnly: true),
                       ],
                     ),
                     Row(

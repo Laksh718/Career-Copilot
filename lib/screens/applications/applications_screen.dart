@@ -120,7 +120,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          const AppLogo(size: 38, onDark: true),
+                          const AppLogo(size: 46, emblemOnly: true),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(

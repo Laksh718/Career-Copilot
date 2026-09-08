@@ -365,32 +365,27 @@ class _LiquidAddButtonState extends State<_LiquidAddButton>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFFF8A00), // Molten liquid amber
-                  Color(0xFFFF5252), // Liquid vermilion
-                  Color(0xFFD946EF), // Liquid neon magenta
+                  Color(0xFF1E2430),
+                  Color(0xFF0C1017),
                 ],
               ),
               border: Border.all(
-                color: Colors.white.withValues(alpha: widget.isSelected ? 0.85 : 0.40),
-                width: widget.isSelected ? 2.2 : 1.5,
+                color: widget.isSelected
+                    ? const Color(0xFFFF8A00)
+                    : const Color(0xFFFF8A00).withValues(alpha: 0.60),
+                width: widget.isSelected ? 2.2 : 1.6,
               ),
               boxShadow: [
-                // Deep molten liquid aura glow
+                // Warm ambient liquid backlight
                 BoxShadow(
-                  color: const Color(0xFFFF5722).withValues(alpha: isDark ? 0.55 : 0.40),
-                  blurRadius: _isHovered ? 26 : 20,
-                  spreadRadius: _isHovered ? 2 : 1,
-                  offset: const Offset(0, 8),
-                ),
-                // Secondary liquid magenta backlight
-                BoxShadow(
-                  color: const Color(0xFFD946EF).withValues(alpha: isDark ? 0.35 : 0.22),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
+                  color: const Color(0xFFFF8A00).withValues(alpha: isDark ? 0.42 : 0.28),
+                  blurRadius: _isHovered ? 24 : 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 6),
                 ),
                 if (widget.isSelected || _isHovered)
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.45),
+                    color: const Color(0xFFFF8A00).withValues(alpha: 0.35),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),
@@ -401,12 +396,27 @@ class _LiquidAddButtonState extends State<_LiquidAddButton>
               child: Stack(
                 alignment: Alignment.center,
                 children: [
+                  // Subtle warm ambient radial center glow
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          Color(0x35FF8A00),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+
                   // Liquid Specular Highlight (Glossy curved meniscus sheen)
                   Positioned(
                     top: 2,
                     left: 6,
                     right: 6,
-                    height: 24,
+                    height: 22,
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(
@@ -417,26 +427,20 @@ class _LiquidAddButtonState extends State<_LiquidAddButton>
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.white.withValues(alpha: 0.55),
-                            Colors.white.withValues(alpha: 0.05),
+                            Colors.white.withValues(alpha: 0.25),
+                            Colors.white.withValues(alpha: 0.02),
                           ],
                         ),
                       ),
                     ),
                   ),
 
-                  // Center Icon with soft optical shadow
-                  const Icon(
-                    Icons.add_rounded,
-                    color: AppTheme.white,
-                    size: 30,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black38,
-                        blurRadius: 6,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
+                  // Center Tab Bar Logo Emblem
+                  Image.asset(
+                    'assets/images/app_logo_emblem.png',
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.contain,
                   ),
                 ],
               ),

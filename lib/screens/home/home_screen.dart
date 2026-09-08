@@ -309,8 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Logo badge instead of text pill
-                                const AppLogo(size: 38, onDark: true),
+                                // Full brand logo on dark hero header
+                                const AppLogo(height: 44, width: 116),
                                 const SizedBox(width: 12),
                                 GestureDetector(
                                   onTap: () => _onNavTap(5),
