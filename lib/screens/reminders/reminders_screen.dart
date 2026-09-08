@@ -90,28 +90,24 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
             return Padding(
               padding: EdgeInsets.only(bottom: bottomPadding),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E2638) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                  border: Border.all(
+              child: Material(
+                color: isDark ? const Color(0xFF1E2638) : Colors.white,
+                elevation: 16,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.14)
                         : Colors.black.withValues(alpha: 0.08),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 30,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: SingleChildScrollView(
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -489,8 +485,9 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          );
+        },
         );
       },
     );

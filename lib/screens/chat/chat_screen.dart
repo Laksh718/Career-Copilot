@@ -214,67 +214,71 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.darkCard : AppTheme.white,
+      builder: (ctx) => Material(
+        color: isDark ? AppTheme.darkCard : AppTheme.white,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
-                  borderRadius: BorderRadius.circular(2),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.bolt_rounded, color: AppTheme.orange, size: 20),
                   ),
-                  child: const Icon(Icons.bolt_rounded, color: AppTheme.orange, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Quick Career Prompts',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ..._promptCategories.map(
-              (item) => ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Quick Career Prompts',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
-                  child: Icon(item["icon"] as IconData, size: 18, color: AppTheme.orange),
-                ),
-                title: Text(item["label"] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                subtitle: Text(item["query"] as String, style: Theme.of(context).textTheme.bodySmall),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.orange),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _send(item["query"] as String);
-                },
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              ..._promptCategories.map(
+                (item) => ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(item["icon"] as IconData, size: 18, color: AppTheme.orange),
+                  ),
+                  title: Text(item["label"] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                  subtitle: Text(item["query"] as String, style: Theme.of(context).textTheme.bodySmall),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppTheme.orange),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _send(item["query"] as String);
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
