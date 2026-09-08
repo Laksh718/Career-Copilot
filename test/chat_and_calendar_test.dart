@@ -147,4 +147,43 @@ void main() {
     expect(find.text('TEMPLATE', skipOffstage: false), findsOneWidget);
     expect(find.text('Copy Template', skipOffstage: false), findsOneWidget);
   });
+
+  testWidgets('CalendarScreen handles day selection and animation without BoxDecoration assertion', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final repo = ApplicationRepository(prefs);
+    final mockAi = MockCareerAIService();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => ApplicationController(repo)),
+          ChangeNotifierProvider(create: (_) => ReminderController(prefs)),
+          ChangeNotifierProvider(create: (_) => AIController(mockAi)),
+          ChangeNotifierProvider(create: (_) => ThemeController(prefs)),
+        ],
+        child: const MaterialApp(
+          home: CalendarScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap on day 15 in the calendar
+    final dayFinder = find.text('15');
+    if (dayFinder.evaluate().isNotEmpty) {
+      await tester.tap(dayFinder.first);
+      // Pump intermediate animation ticks where AnimatedContainer previously crashed
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('Calendar'), findsOneWidget);
+  });
 }

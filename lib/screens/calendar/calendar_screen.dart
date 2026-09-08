@@ -223,18 +223,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           return Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? AppTheme.darkCard : AppTheme.white,
+            child: Material(
+              color: isDark ? AppTheme.darkCard : AppTheme.white,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
                 borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Center(
                     child: Container(
                       width: 40,
@@ -474,8 +476,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ],
               ),
             ),
-          );
-        },
+          ),
+        );
+      },
       ),
     );
   }
@@ -749,8 +752,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 fontSize: 13,
                               ),
                               todayDecoration: BoxDecoration(
-                                color: AppTheme.orange.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(12),
+                                color: AppTheme.orange.withValues(alpha: 0.18),
+                                shape: BoxShape.circle,
                                 border: Border.all(color: AppTheme.orange, width: 1.5),
                               ),
                               todayTextStyle: const TextStyle(
@@ -759,7 +762,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ),
                               selectedDecoration: const BoxDecoration(
                                 color: AppTheme.orange,
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                                shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
                                     color: AppTheme.orangeGlow,
@@ -771,6 +774,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               selectedTextStyle: const TextStyle(
                                 color: AppTheme.white,
                                 fontWeight: FontWeight.w800,
+                              ),
+                              defaultDecoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              weekendDecoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              outsideDecoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              disabledDecoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              holidayDecoration: const BoxDecoration(
+                                shape: BoxShape.circle,
                               ),
                               markersMaxCount: 3,
                             ),
