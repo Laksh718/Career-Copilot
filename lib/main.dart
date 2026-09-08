@@ -20,6 +20,7 @@ void main() async {
   
   final appRepository = ApplicationRepository(prefs);
   final aiService = GeminiCareerAIService(prefs: prefs);
+  await aiService.loadPlatformDefaultKeyIfAvailable();
 
   await NotificationService().init();
 

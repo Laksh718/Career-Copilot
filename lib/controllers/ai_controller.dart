@@ -70,6 +70,14 @@ class AIController extends ChangeNotifier {
     }
   }
 
+  Future<void> loadPlatformDefaultKeyIfAvailable() async {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      await service.loadPlatformDefaultKeyIfAvailable();
+      notifyListeners();
+    }
+  }
+
   Future<String?> testApiKey([String? testKey]) async {
     final service = _aiService;
     if (service is GeminiCareerAIService) {

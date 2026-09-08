@@ -1,7 +1,25 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+val secretsFile = rootProject.file("../secrets/api_keys.json")
+var defaultGeminiApiKey = localProperties.getProperty("gemini.api.key") ?: ""
+if (defaultGeminiApiKey.isEmpty() && secretsFile.exists()) {
+    val text = secretsFile.readText()
+    val match = Regex("\"GEMINI_API_KEY\"\\s*:\\s*\"([^\"]+)\"").find(text)
+    if (match != null) {
+        defaultGeminiApiKey = match.groupValues[1]
+    }
 }
 
 android {
@@ -28,6 +46,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        resValue("string", "default_gemini_api_key", defaultGeminiApiKey)
     }
 
     buildTypes {

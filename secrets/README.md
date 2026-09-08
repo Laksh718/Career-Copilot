@@ -21,6 +21,13 @@ Files matching `secrets/*` (such as `secrets/api_keys.json`) are strictly ignore
    flutter build apk --dart-define-from-file=secrets/api_keys.json
    ```
 
+### Android Build Default Key (Automatic)
+For Android builds, the default API key is automatically read at build time from either:
+- `android/local.properties`: `gemini.api.key=your_api_key_here` (gitignored), OR
+- `secrets/api_keys.json`: `{"GEMINI_API_KEY": "your_api_key_here"}` (gitignored)
+
+Gradle injects this into the Android app string resources, and the Flutter app loads it on launch without requiring any hardcoded keys in tracked git files.
+
 ### In-App Configuration
 Users can also configure or change their Gemini API key directly within the app at runtime via:
 - **Chat Header**: Tap the AI status badge (Offline AI / Gemini Active)

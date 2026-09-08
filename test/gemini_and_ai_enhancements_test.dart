@@ -94,6 +94,36 @@ void main() {
       expect(reloadedGemini.isConfigured, false);
       expect(reloadedGemini.apiKey, '');
     });
+
+    test('GeminiCareerAIService supports platform default key with override, restore, and clear', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final gemini = GeminiCareerAIService(
+        prefs: prefs,
+        platformDefaultKey: 'PlatformDefaultKeyTest456',
+      );
+
+      // Initializes with platform default key out of the box
+      expect(gemini.isConfigured, true);
+      expect(gemini.apiKey, 'PlatformDefaultKeyTest456');
+      expect(gemini.hasEnvironmentKey, true);
+      expect(gemini.isDefaultKey, true);
+
+      // User overrides with custom key
+      await gemini.setApiKey('CustomUserKey789');
+      expect(gemini.apiKey, 'CustomUserKey789');
+      expect(gemini.isDefaultKey, false);
+
+      // User restores default key
+      await gemini.restoreDefaultKey();
+      expect(gemini.apiKey, 'PlatformDefaultKeyTest456');
+      expect(gemini.isDefaultKey, true);
+
+      // User clears key
+      await gemini.clearApiKey();
+      expect(gemini.isConfigured, false);
+      expect(gemini.apiKey, '');
+    });
   });
 
   group('ChatScreen Narrow Layout & Header Status', () {
