@@ -14,7 +14,6 @@ class GeminiCareerAIService implements CareerAIService {
   final SharedPreferences? _prefs;
   String _apiKey = '';
   GenerativeModel? _model;
-  GenerativeModel? _fallbackModel;
   final MockCareerAIService _fallbackService = MockCareerAIService();
 
   GeminiCareerAIService({SharedPreferences? prefs}) : _prefs = prefs {
@@ -39,48 +38,54 @@ class GeminiCareerAIService implements CareerAIService {
     _initModel();
   }
 
+  static const List<String> candidateModels = [
+    'gemini-2.5-flash',
+    'gemini-3.5-flash',
+    'gemini-1.5-flash',
+    'gemini-pro',
+  ];
+
   void _initModel() {
     if (_apiKey.isNotEmpty) {
       _model = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: _apiKey,
-      );
-      _fallbackModel = GenerativeModel(
-        model: 'gemini-pro',
+        model: 'gemini-2.5-flash',
         apiKey: _apiKey,
       );
     } else {
       _model = null;
-      _fallbackModel = null;
     }
   }
 
-  /// Helper to generate content with gemini-1.5-flash, falling back to gemini-pro if unsupported
+  /// Helper to generate content with gemini-2.5-flash, cascading to gemini-3.5-flash & legacy models
   Future<GenerateContentResponse> _generateContentWithFallback(
     List<Content> contents, {
     GenerationConfig? generationConfig,
   }) async {
-    final primary = _model;
-    if (primary == null) {
+    if (_apiKey.isEmpty) {
       throw StateError('Gemini API key is not configured');
     }
-    try {
-      return await primary.generateContent(contents, generationConfig: generationConfig);
-    } catch (e) {
-      final errStr = e.toString().toLowerCase();
-      if (_fallbackModel != null &&
-          (errStr.contains('not found') ||
-              errStr.contains('404') ||
-              errStr.contains('unsupported') ||
-              errStr.contains('model'))) {
-        try {
-          return await _fallbackModel!.generateContent(contents, generationConfig: generationConfig);
-        } catch (_) {
-          rethrow;
+    Object? lastError;
+    for (final modelName in candidateModels) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: _apiKey,
+        );
+        return await model.generateContent(contents, generationConfig: generationConfig);
+      } catch (e) {
+        lastError = e;
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('not found') ||
+            errStr.contains('404') ||
+            errStr.contains('unsupported') ||
+            errStr.contains('no longer available') ||
+            errStr.contains('model')) {
+          continue;
         }
+        rethrow;
       }
-      rethrow;
     }
+    throw lastError ?? StateError('All Gemini candidate models failed');
   }
 
   String _formatUserFriendlyError(Object e) {
@@ -93,6 +98,9 @@ class GeminiCareerAIService implements CareerAIService {
     }
     if (str.contains('PERMISSION_DENIED')) {
       return 'Permission denied for this API key';
+    }
+    if (str.contains('503') || str.contains('UNAVAILABLE') || str.contains('high demand')) {
+      return 'Gemini is experiencing temporary high traffic. Please retry in a moment';
     }
     if (str.contains('SocketException') || str.contains('Network') || str.contains('Failed to fetch') || str.contains('XMLHttpRequest')) {
       return 'Network connection error';
@@ -122,7 +130,6 @@ class GeminiCareerAIService implements CareerAIService {
       await _prefs.remove(prefKey);
     }
     _model = null;
-    _fallbackModel = null;
   }
 
   /// Test a given API key or the current key with a minimal request
@@ -135,31 +142,33 @@ class GeminiCareerAIService implements CareerAIService {
       return 'API key is empty. Please enter a valid Gemini API key.';
     }
 
-    try {
-      final testModel = GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: keyToTest,
-      );
+    Object? lastError;
+    for (final modelName in candidateModels) {
       try {
-        final res = await testModel.generateContent([Content.text('Respond with "OK"')]);
-        if (res.text != null && res.text!.isNotEmpty) {
-          return null; // Success! null means no error
-        }
-      } catch (e) {
-        // Fallback test with gemini-pro
-        final testPro = GenerativeModel(
-          model: 'gemini-pro',
+        final testModel = GenerativeModel(
+          model: modelName,
           apiKey: keyToTest,
         );
-        final res = await testPro.generateContent([Content.text('Respond with "OK"')]);
+        final res = await testModel.generateContent([Content.text('Respond with "OK"')]);
         if (res.text != null && res.text!.isNotEmpty) {
-          return null;
+          return null; // Success!
         }
+      } catch (e) {
+        lastError = e;
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('not found') ||
+            errStr.contains('404') ||
+            errStr.contains('unsupported') ||
+            errStr.contains('no longer available') ||
+            errStr.contains('model')) {
+          continue;
+        }
+        return _formatUserFriendlyError(e);
       }
-      return 'Received empty response from Gemini API.';
-    } catch (e) {
-      return _formatUserFriendlyError(e);
     }
+    return lastError != null
+        ? _formatUserFriendlyError(lastError)
+        : 'Received empty response from Gemini API.';
   }
 
   @override

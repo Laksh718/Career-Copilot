@@ -174,7 +174,7 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                                   isTesting = false;
                                   testSuccess = (err == null);
                                   testResult = (err == null)
-                                      ? 'API key verified successfully with Gemini 1.5!'
+                                      ? 'API key verified successfully with Gemini 2.5!'
                                       : err;
                                 });
                               },

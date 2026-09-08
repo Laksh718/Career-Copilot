@@ -371,7 +371,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        isGeminiActive ? 'Gemini 1.5 Flash' : 'Local Fallback',
+                                        isGeminiActive ? 'Gemini 2.5 Flash' : 'Local Fallback',
                                         style: TextStyle(
                                           color: isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange,
                                           fontWeight: FontWeight.w700,

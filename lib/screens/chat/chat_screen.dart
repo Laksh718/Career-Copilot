@@ -425,7 +425,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                           const SizedBox(width: 6),
                                           Flexible(
                                             child: Text(
-                                              isGemini ? 'Gemini 1.5 Active' : 'Offline AI • Tap to connect',
+                                              isGemini ? 'Gemini 2.5 Active' : 'Offline AI • Tap to connect',
                                               overflow: TextOverflow.ellipsis,
                                               maxLines: 1,
                                               style: TextStyle(
