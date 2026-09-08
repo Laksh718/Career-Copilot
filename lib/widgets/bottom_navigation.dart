@@ -124,7 +124,7 @@ class BottomNavigation extends StatelessWidget {
                                   ),
                                 ),
                                 // Symmetrical center gap reserved for the floating Liquid Add button
-                                const SizedBox(width: 48),
+                                const SizedBox(width: 52),
                                 Expanded(
                                   child: _NavItem(
                                     icon: Icons.calendar_month_rounded,
@@ -159,9 +159,9 @@ class BottomNavigation extends StatelessWidget {
                 ),
               ),
 
-              // ── Elevated Centered Liquid UI Floating Add Button ──
+              // ── Centered Inline Liquid UI Add Button ──
               Positioned(
-                top: -18,
+                top: 8,
                 child: _LiquidAddButton(
                   isSelected: currentIndex == 3,
                   onTap: () => onTap(3),
@@ -357,90 +357,81 @@ class _LiquidAddButtonState extends State<_LiquidAddButton>
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
           child: Container(
-            width: 56,
-            height: 56,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(18),
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF1E2430),
-                  Color(0xFF0C1017),
+                  Color(0xFFFF9500),
+                  Color(0xFFFF5722),
                 ],
               ),
               border: Border.all(
                 color: widget.isSelected
-                    ? const Color(0xFFFF8A00)
-                    : const Color(0xFFFF8A00).withValues(alpha: 0.60),
-                width: widget.isSelected ? 2.2 : 1.6,
+                    ? Colors.white.withValues(alpha: 0.90)
+                    : Colors.white.withValues(alpha: 0.40),
+                width: widget.isSelected ? 2.0 : 1.4,
               ),
               boxShadow: [
                 // Warm ambient liquid backlight
                 BoxShadow(
-                  color: const Color(0xFFFF8A00).withValues(alpha: isDark ? 0.42 : 0.28),
-                  blurRadius: _isHovered ? 24 : 18,
+                  color: const Color(0xFFFF6F00).withValues(alpha: isDark ? 0.45 : 0.32),
+                  blurRadius: _isHovered ? 20 : 14,
                   spreadRadius: 1,
-                  offset: const Offset(0, 6),
+                  offset: const Offset(0, 4),
                 ),
                 if (widget.isSelected || _isHovered)
                   BoxShadow(
-                    color: const Color(0xFFFF8A00).withValues(alpha: 0.35),
-                    blurRadius: 12,
+                    color: const Color(0xFFFF9500).withValues(alpha: 0.45),
+                    blurRadius: 10,
                     spreadRadius: 1,
                   ),
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Subtle warm ambient radial center glow
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          Color(0x35FF8A00),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-
                   // Liquid Specular Highlight (Glossy curved meniscus sheen)
                   Positioned(
                     top: 2,
-                    left: 6,
-                    right: 6,
-                    height: 22,
+                    left: 5,
+                    right: 5,
+                    height: 18,
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(18),
-                          bottom: Radius.elliptical(26, 12),
+                          top: Radius.circular(16),
+                          bottom: Radius.elliptical(22, 10),
                         ),
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.white.withValues(alpha: 0.25),
-                            Colors.white.withValues(alpha: 0.02),
+                            Colors.white.withValues(alpha: 0.38),
+                            Colors.white.withValues(alpha: 0.04),
                           ],
                         ),
                       ),
                     ),
                   ),
 
-                  // Center Tab Bar Logo Emblem
-                  Image.asset(
-                    'assets/images/app_logo_emblem.png',
-                    width: 34,
-                    height: 34,
-                    fit: BoxFit.contain,
+                  // Center Plus Icon
+                  const Icon(
+                    Icons.add_rounded,
+                    color: Colors.white,
+                    size: 28,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: Offset(0, 1),
+                      ),
+                    ],
                   ),
                 ],
               ),

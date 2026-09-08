@@ -31,9 +31,10 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
               borderRadius: BorderRadius.circular(AppTheme.radiusXl),
               border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
                   child: Container(
@@ -246,7 +247,8 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     ),
   );

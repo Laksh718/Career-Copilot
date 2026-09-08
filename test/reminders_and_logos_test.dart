@@ -157,8 +157,8 @@ void main() {
       expect(find.text('Chat'), findsOneWidget);
       expect(find.text('Profile'), findsOneWidget);
 
-      // Center Logo button is present
-      expect(find.byType(Image), findsWidgets);
+      // Center Plus button is present
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
 
       // Tap on Alarms (tab 2)
       await tester.tap(find.text('Alarms'));
@@ -168,8 +168,8 @@ void main() {
       await tester.tap(find.text('Profile'));
       expect(tappedIndex, 6);
 
-      // Tap on Center Logo (tab 3)
-      await tester.tap(find.byType(Image).first);
+      // Tap on Center Plus button (tab 3)
+      await tester.tap(find.byIcon(Icons.add_rounded));
       expect(tappedIndex, 3);
     });
   });

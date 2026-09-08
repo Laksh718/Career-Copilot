@@ -55,7 +55,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
-  bool _showGeminiBanner = true;
+  bool? _showGeminiBanner = true;
   int _tab = 0;
 
   final List<Map<String, dynamic>> _promptCategories = [
@@ -94,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _showGeminiBanner = true;
     _messages.add(
       _ChatMessage(
         text: "Hello Laksh! I'm your **Career Copilot** intelligence assistant.\n\n"
@@ -507,7 +508,8 @@ class _ChatScreenState extends State<ChatScreen> {
             if (_tab == 0)
               Consumer<AIController>(
                 builder: (context, aiCtrl, _) {
-                  if (aiCtrl.isGeminiActive || !_showGeminiBanner) return const SizedBox.shrink();
+                  final showBanner = _showGeminiBanner ?? true;
+                  if (aiCtrl.isGeminiActive || !showBanner) return const SizedBox.shrink();
                   return Container(
                     margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
