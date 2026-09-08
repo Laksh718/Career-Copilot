@@ -30,6 +30,22 @@ class AIController extends ChangeNotifier {
     return '';
   }
 
+  bool get hasEnvironmentKey {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      return service.hasEnvironmentKey;
+    }
+    return false;
+  }
+
+  bool get isDefaultKey {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      return service.isDefaultKey;
+    }
+    return false;
+  }
+
   Future<void> updateApiKey(String key) async {
     final service = _aiService;
     if (service is GeminiCareerAIService) {
@@ -42,6 +58,14 @@ class AIController extends ChangeNotifier {
     final service = _aiService;
     if (service is GeminiCareerAIService) {
       await service.clearApiKey();
+      notifyListeners();
+    }
+  }
+
+  Future<void> restoreDefaultKey() async {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      await service.restoreDefaultKey();
       notifyListeners();
     }
   }

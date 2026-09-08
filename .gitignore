@@ -46,3 +46,18 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Keys, Secrets, and Local Environment
+secrets/*
+!secrets/*.example
+!secrets/**/*.example
+!secrets/README.md
+keys/*
+*.key
+*.secret
+*.pem
+*.env
+*.env.*
+.env
+.env.*
+secrets.json

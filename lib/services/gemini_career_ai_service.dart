@@ -10,6 +10,7 @@ import 'mock_career_ai_service.dart';
 
 class GeminiCareerAIService implements CareerAIService {
   static const String prefKey = 'gemini_api_key';
+  static const String userClearedKey = 'gemini_key_cleared_by_user';
 
   final SharedPreferences? _prefs;
   String _apiKey = '';
@@ -21,18 +22,23 @@ class GeminiCareerAIService implements CareerAIService {
   }
 
   void _init() {
-    // 1. Check SharedPreferences
-    final savedKey = _prefs?.getString(prefKey);
-    if (savedKey != null && savedKey.trim().isNotEmpty) {
-      _apiKey = savedKey.trim();
+    final bool userCleared = _prefs?.getBool(userClearedKey) ?? false;
+    if (userCleared) {
+      _apiKey = '';
     } else {
-      // 2. Check --dart-define
-      const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
-      if (envKey.isNotEmpty) {
-        _apiKey = envKey.trim();
+      // 1. Check SharedPreferences for user-provided custom key
+      final savedKey = _prefs?.getString(prefKey);
+      if (savedKey != null && savedKey.trim().isNotEmpty) {
+        _apiKey = savedKey.trim();
       } else {
-        // 3. Fallback to ApiConfig
-        _apiKey = ApiConfig.geminiApiKey.trim();
+        // 2. Check --dart-define
+        const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+        if (envKey.isNotEmpty) {
+          _apiKey = envKey.trim();
+        } else {
+          // 3. Fallback to ApiConfig default
+          _apiKey = ApiConfig.geminiApiKey.trim();
+        }
       }
     }
     _initModel();
@@ -114,22 +120,55 @@ class GeminiCareerAIService implements CareerAIService {
   /// Current configured API key (masked or raw)
   String get apiKey => _apiKey;
 
-  /// Update the Gemini API key dynamically
+  /// Whether an environment key was passed at launch or build time
+  bool get hasEnvironmentKey {
+    const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+    final defaultKey = envKey.isNotEmpty ? envKey.trim() : ApiConfig.geminiApiKey.trim();
+    return defaultKey.isNotEmpty;
+  }
+
+  /// Whether the currently active key is the environment default key
+  bool get isDefaultKey {
+    if (_apiKey.isEmpty) return false;
+    const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+    final defaultKey = envKey.isNotEmpty ? envKey.trim() : ApiConfig.geminiApiKey.trim();
+    return defaultKey.isNotEmpty && _apiKey == defaultKey;
+  }
+
+  /// Update the Gemini API key dynamically with user-provided custom key
   Future<void> setApiKey(String key) async {
-    _apiKey = key.trim();
+    final trimmed = key.trim();
+    if (trimmed.isEmpty) {
+      await clearApiKey();
+      return;
+    }
+    _apiKey = trimmed;
     if (_prefs != null) {
+      await _prefs.setBool(userClearedKey, false);
       await _prefs.setString(prefKey, _apiKey);
     }
     _initModel();
   }
 
-  /// Remove saved API key and revert to fallback
+  /// Remove saved API key and explicitly switch to offline fallback
   Future<void> clearApiKey() async {
     _apiKey = '';
     if (_prefs != null) {
+      await _prefs.setBool(userClearedKey, true);
       await _prefs.remove(prefKey);
     }
     _model = null;
+  }
+
+  /// Restore the default built-in application key
+  Future<void> restoreDefaultKey() async {
+    if (_prefs != null) {
+      await _prefs.setBool(userClearedKey, false);
+      await _prefs.remove(prefKey);
+    }
+    const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+    _apiKey = envKey.isNotEmpty ? envKey.trim() : ApiConfig.geminiApiKey.trim();
+    _initModel();
   }
 
   /// Test a given API key or the current key with a minimal request

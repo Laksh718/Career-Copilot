@@ -68,26 +68,36 @@ void main() {
       expect(dsaAnswer, contains('Two Pointers'));
     });
 
-    test('GeminiCareerAIService updates and clears keys cleanly', () async {
+    test('GeminiCareerAIService handles dynamic custom key, clearing, and persistence', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final gemini = GeminiCareerAIService(prefs: prefs);
 
+      // Without environment flag or hardcoded secrets, starts offline by default
       expect(gemini.isConfigured, false);
       expect(gemini.apiKey, '');
 
+      // User configures API key dynamically
       await gemini.setApiKey('AIzaSyTestKey123');
       expect(gemini.isConfigured, true);
       expect(gemini.apiKey, 'AIzaSyTestKey123');
+      expect(gemini.isDefaultKey, false);
 
+      // Explicitly clearing key reverts to offline
       await gemini.clearApiKey();
       expect(gemini.isConfigured, false);
       expect(gemini.apiKey, '');
+      expect(gemini.isDefaultKey, false);
+
+      // Re-instantiating with same prefs respects explicit user clear
+      final reloadedGemini = GeminiCareerAIService(prefs: prefs);
+      expect(reloadedGemini.isConfigured, false);
+      expect(reloadedGemini.apiKey, '');
     });
   });
 
   group('ChatScreen Narrow Layout & Header Status', () {
-    testWidgets('ChatScreen header fits without overflow on 184px constraint width', (tester) async {
+    testWidgets('ChatScreen header fits without overflow and reflects key state', (tester) async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final appRepo = ApplicationRepository(prefs);
@@ -98,11 +108,13 @@ void main() {
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
+      final aiController = AIController(gemini);
+
       await tester.pumpWidget(
         MultiProvider(
           providers: [
             ChangeNotifierProvider(create: (_) => ApplicationController(appRepo)),
-            ChangeNotifierProvider(create: (_) => AIController(gemini)),
+            ChangeNotifierProvider.value(value: aiController),
             ChangeNotifierProvider(create: (_) => ThemeController(prefs)),
           ],
           child: const MaterialApp(
@@ -115,6 +127,17 @@ void main() {
 
       expect(find.text('Career Copilot'), findsOneWidget);
       expect(find.text('PRO'), findsOneWidget);
+      // Starts in offline AI mode
+      expect(find.textContaining('Offline AI'), findsWidgets);
+
+      // When user configures key, updates to Gemini Active
+      await aiController.updateApiKey('AIzaSyTestKey123');
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Gemini 2.5 Active'), findsWidgets);
+
+      // When key is cleared, badge reverts to Offline AI
+      await aiController.clearApiKey();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.textContaining('Offline AI'), findsWidgets);
     });
   });
