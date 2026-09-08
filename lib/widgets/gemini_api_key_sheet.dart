@@ -7,7 +7,8 @@ import '../controllers/ai_controller.dart';
 /// Can be invoked directly from the Chat header, profile screen, or activation banners.
 Future<void> showGeminiApiKeySheet(BuildContext context) async {
   final aiCtrl = context.read<AIController>();
-  final currentKey = aiCtrl.currentApiKey;
+  final isDefault = aiCtrl.isDefaultKey;
+  final currentKey = isDefault ? '' : aiCtrl.currentApiKey;
   final textController = TextEditingController(text: currentKey);
   bool obscure = true;
   bool isTesting = false;
@@ -76,7 +77,7 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
@@ -97,7 +98,7 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                       children: [
                         Icon(
                           aiCtrl.currentApiKey.isNotEmpty
-                              ? (aiCtrl.isDefaultKey ? Icons.auto_awesome_rounded : Icons.verified_user_rounded)
+                              ? (aiCtrl.isDefaultKey ? Icons.lock_rounded : Icons.verified_user_rounded)
                               : Icons.cloud_off_rounded,
                           size: 13,
                           color: aiCtrl.currentApiKey.isNotEmpty
@@ -107,14 +108,14 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                         const SizedBox(width: 6),
                         Text(
                           aiCtrl.currentApiKey.isNotEmpty
-                              ? (aiCtrl.isDefaultKey ? 'Environment Key Active' : 'Gemini Key Active')
+                              ? (aiCtrl.isDefaultKey ? 'Default AI Key Active (Protected)' : 'Custom Key Active')
                               : 'Offline Mode (Local AI Engine)',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: aiCtrl.currentApiKey.isNotEmpty
-                                ? (aiCtrl.isDefaultKey ? AppTheme.orange : AppTheme.vibrantGreen)
-                                : (isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight),
+                              ? (aiCtrl.isDefaultKey ? AppTheme.orange : AppTheme.vibrantGreen)
+                              : (isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight),
                           ),
                         ),
                       ],
@@ -122,6 +123,33 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                   ),
                 ),
                 const SizedBox(height: 12),
+                if (aiCtrl.isDefaultKey) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.orange.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.orange.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_rounded, color: AppTheme.orange, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Default Gemini AI key is active and protected. Enter a custom key below to override it.',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: textController,
                   obscureText: obscure,
@@ -131,7 +159,9 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                     color: isDark ? AppTheme.textLight : AppTheme.textDark,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Enter API key (AIzaSy...)',
+                    hintText: aiCtrl.isDefaultKey
+                        ? '•••••••••••••••• (Default key active)'
+                        : 'Enter custom API key (AIzaSy...)',
                     hintStyle: TextStyle(
                       fontFamily: 'sans-serif',
                       fontSize: 13,
@@ -215,12 +245,16 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                                   isTesting = true;
                                   testResult = null;
                                 });
-                                final err = await aiCtrl.testApiKey(textController.text.trim());
+                                final keyInput = textController.text.trim();
+                                final testKey = keyInput.isNotEmpty ? keyInput : (aiCtrl.isDefaultKey ? null : '');
+                                final err = await aiCtrl.testApiKey(testKey);
                                 setSheetState(() {
                                   isTesting = false;
                                   testSuccess = (err == null);
                                   testResult = (err == null)
-                                      ? 'API key verified successfully with Gemini 2.5!'
+                                      ? (keyInput.isEmpty && aiCtrl.isDefaultKey
+                                          ? 'Default Gemini key verified successfully!'
+                                          : 'API key verified successfully with Gemini 2.5!')
                                       : err;
                                 });
                               },
@@ -243,14 +277,16 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                       child: ElevatedButton(
                         onPressed: () async {
                           final key = textController.text.trim();
-                          await aiCtrl.updateApiKey(key);
+                          if (key.isNotEmpty) {
+                            await aiCtrl.updateApiKey(key);
+                          }
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(key.isNotEmpty
-                                    ? 'Gemini API key saved & activated!'
-                                    : 'Gemini API key cleared (using local offline AI).'),
+                                    ? 'Gemini custom API key saved & activated!'
+                                    : 'Default protected Gemini key remains active.'),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
@@ -273,20 +309,20 @@ Future<void> showGeminiApiKeySheet(BuildContext context) async {
                   TextButton.icon(
                     icon: const Icon(Icons.restore_rounded, size: 16, color: AppTheme.orange),
                     label: const Text(
-                      'Reset to Environment Key',
+                      'Reset to Default Key',
                       style: TextStyle(color: AppTheme.orange, fontWeight: FontWeight.w700, fontSize: 12),
                     ),
                     onPressed: () async {
                       await aiCtrl.restoreDefaultKey();
-                      textController.text = aiCtrl.currentApiKey;
+                      textController.clear();
                       setSheetState(() {
-                        testResult = 'Restored environment API key!';
+                        testResult = 'Default protected Gemini key restored!';
                         testSuccess = true;
                       });
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: const Text('Environment Gemini key restored & activated!'),
+                            content: const Text('Default protected Gemini key restored & activated!'),
                             behavior: SnackBarBehavior.floating,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           ),

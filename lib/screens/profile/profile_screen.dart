@@ -391,7 +391,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      aiCtrl.currentApiKey.isNotEmpty ? '••••••••' : 'Not Configured',
+                                      aiCtrl.currentApiKey.isNotEmpty
+                                          ? (aiCtrl.isDefaultKey ? 'Protected Default' : '••••••••')
+                                          : 'Not Configured',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,

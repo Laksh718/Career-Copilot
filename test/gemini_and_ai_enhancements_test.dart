@@ -73,9 +73,10 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final gemini = GeminiCareerAIService(prefs: prefs);
 
-      // Without environment flag or hardcoded secrets, starts offline by default
-      expect(gemini.isConfigured, false);
-      expect(gemini.apiKey, '');
+      // Protected default key is active out of the box
+      expect(gemini.isConfigured, true);
+      expect(gemini.isDefaultKey, true);
+      expect(gemini.apiKey.isNotEmpty, true);
 
       // User configures API key dynamically
       await gemini.setApiKey('AIzaSyTestKey123');
@@ -157,18 +158,18 @@ void main() {
 
       expect(find.text('Career Copilot'), findsOneWidget);
       expect(find.text('PRO'), findsOneWidget);
-      // Starts in offline AI mode
-      expect(find.textContaining('Offline AI'), findsWidgets);
-
-      // When user configures key, updates to Gemini Active
-      await aiController.updateApiKey('AIzaSyTestKey123');
-      await tester.pump(const Duration(milliseconds: 300));
+      // Starts with default key active (Gemini 2.5 Active)
       expect(find.textContaining('Gemini 2.5 Active'), findsWidgets);
 
       // When key is cleared, badge reverts to Offline AI
       await aiController.clearApiKey();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.textContaining('Offline AI'), findsWidgets);
+
+      // When user configures key, updates to Gemini Active
+      await aiController.updateApiKey('AIzaSyTestKey123');
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Gemini 2.5 Active'), findsWidgets);
     });
   });
 }
