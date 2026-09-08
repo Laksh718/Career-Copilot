@@ -27,21 +27,22 @@ class GeminiCareerAIService implements CareerAIService {
     _init();
   }
 
+  static const String offlineSentinel = '__OFFLINE_MODE__';
+
   void _init() {
-    final bool userCleared = _prefs?.getBool(userClearedKey) ?? false;
-    if (userCleared) {
-      _apiKey = '';
-    } else {
-      // 1. Check SharedPreferences for user-provided custom key
-      final savedKey = _prefs?.getString(prefKey);
-      if (savedKey != null && savedKey.trim().isNotEmpty) {
-        _apiKey = savedKey.trim();
+    final savedKey = _prefs?.getString(prefKey)?.trim();
+    if (savedKey != null && savedKey.isNotEmpty) {
+      if (savedKey == offlineSentinel) {
+        _apiKey = '';
       } else {
-        // 2. Check platform default key, --dart-define or ApiConfig default
-        final def = defaultKey;
-        if (def.isNotEmpty) {
-          _apiKey = def;
-        }
+        _apiKey = savedKey;
+      }
+    } else {
+      // Wipe any legacy cleared flag from older builds so default protected key is always active
+      _prefs?.remove(userClearedKey);
+      final def = defaultKey;
+      if (def.isNotEmpty) {
+        _apiKey = def;
       }
     }
     _initModel();
@@ -180,8 +181,8 @@ class GeminiCareerAIService implements CareerAIService {
   Future<void> clearApiKey() async {
     _apiKey = '';
     if (_prefs != null) {
+      await _prefs.setString(prefKey, offlineSentinel);
       await _prefs.setBool(userClearedKey, true);
-      await _prefs.remove(prefKey);
     }
     _model = null;
   }
@@ -189,8 +190,8 @@ class GeminiCareerAIService implements CareerAIService {
   /// Restore the default built-in application key
   Future<void> restoreDefaultKey() async {
     if (_prefs != null) {
-      await _prefs.setBool(userClearedKey, false);
       await _prefs.remove(prefKey);
+      await _prefs.remove(userClearedKey);
     }
     _apiKey = defaultKey;
     _initModel();

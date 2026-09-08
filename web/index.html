@@ -69,16 +69,30 @@
     }
     setTimeout(checkAndroidPopup, 600);
 
-    // Auto-update service worker to always fetch latest build
+    // Ensure clean state: unregister service workers, clear CacheStorage & purge legacy flags
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          registration.update();
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
         }
       });
     }
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        for (var i = 0; i < keys.length; i++) {
+          caches.delete(keys[i]);
+        }
+      });
+    }
+    try {
+      var customKey = localStorage.getItem('flutter.gemini_api_key');
+      if (!customKey || customKey === '""' || customKey === '\"\"') {
+        localStorage.removeItem('flutter.gemini_key_cleared_by_user');
+        localStorage.removeItem('flutter.gemini_api_key');
+      }
+    } catch (e) {}
   </script>
 
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js?v=20260908_1806" async></script>
 </body>
 </html>
