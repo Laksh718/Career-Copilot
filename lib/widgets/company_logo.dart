@@ -1,11 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/application.dart';
 import '../app/theme.dart';
 
 /// Company and Platform Logo Widget
-/// Dynamically resolves and renders official logos for tech companies, hackathons,
-/// coding contests, and events using Clearbit Logo API and Google Favicon service,
-/// with an ultra-clean liquid-glass monogram vector fallback.
+/// Dynamically renders official company branding, platform logos, or
+/// high-fidelity liquid-glass brand monograms with authentic brand colors.
 class CompanyLogoWidget extends StatelessWidget {
   final String company;
   final String? logoUrl;
@@ -73,6 +73,35 @@ class CompanyLogoWidget extends StatelessWidget {
     'ethereum': 'ethereum.org',
   };
 
+  static const Map<String, Color> _brandColors = {
+    'google': Color(0xFF4285F4),
+    'microsoft': Color(0xFF00A4EF),
+    'amazon': Color(0xFFFF9900),
+    'aws': Color(0xFFFF9900),
+    'apple': Color(0xFF8E8E93),
+    'meta': Color(0xFF0668E1),
+    'facebook': Color(0xFF0668E1),
+    'netflix': Color(0xFFE50914),
+    'uber': Color(0xFF1E293B),
+    'spotify': Color(0xFF1DB954),
+    'stripe': Color(0xFF635BFF),
+    'github': Color(0xFF24292E),
+    'linkedin': Color(0xFF0A66C2),
+    'salesforce': Color(0xFF00A1E0),
+    'nvidia': Color(0xFF76B900),
+    'adobe': Color(0xFFFF0000),
+    'goldman sachs': Color(0xFF7399C6),
+    'jpmorgan': Color(0xFF005C94),
+    'openai': Color(0xFF10A37F),
+    'anthropic': Color(0xFFD97757),
+    'figma': Color(0xFFF24E1E),
+    'solana': Color(0xFF14F195),
+    'ethereum': Color(0xFF627EEA),
+    'polygon': Color(0xFF8247E5),
+    'unstop': Color(0xFF1C4980),
+    'leetcode': Color(0xFFFFA116),
+  };
+
   String? _resolveDomain(String name) {
     final lower = name.toLowerCase().trim();
     for (final entry in _knownDomains.entries) {
@@ -96,17 +125,13 @@ class CompanyLogoWidget extends StatelessWidget {
     if (logoUrl != null && logoUrl!.isNotEmpty) {
       return logoUrl!;
     }
-    final domain = _resolveDomain(company);
-    if (domain != null) {
-      return 'https://logo.clearbit.com/$domain';
-    }
-    return '';
-  }
-
-  String _getSecondaryFaviconUrl() {
-    final domain = _resolveDomain(company);
-    if (domain != null) {
-      return 'https://www.google.com/s2/favicons?domain=$domain&sz=128';
+    // On Flutter Web, browser XMLHttpRequest blocks cross-origin favicon calls with CORS.
+    // On native platforms (Android/iOS), Google Favicon resolves seamlessly.
+    if (!kIsWeb) {
+      final domain = _resolveDomain(company);
+      if (domain != null) {
+        return 'https://www.google.com/s2/favicons?domain=$domain&sz=128';
+      }
     }
     return '';
   }
@@ -124,13 +149,23 @@ class CompanyLogoWidget extends StatelessWidget {
     return trimmed[0].toUpperCase();
   }
 
+  Color _resolveBrandColor(Color fallbackColor) {
+    final lower = company.toLowerCase().trim();
+    for (final entry in _brandColors.entries) {
+      if (lower.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+    return fallbackColor;
+  }
+
   static bool debugDisableNetwork = false;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primaryUrl = debugDisableNetwork ? '' : _getPrimaryLogoUrl();
-    final accentColor = category?.color ?? AppTheme.orange;
+    final accentColor = _resolveBrandColor(category?.color ?? AppTheme.orange);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -160,27 +195,8 @@ class CompanyLogoWidget extends StatelessWidget {
               ? Image.network(
                   primaryUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    final secondaryUrl = _getSecondaryFaviconUrl();
-                    if (secondaryUrl.isNotEmpty) {
-                      return Image.network(
-                        secondaryUrl,
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildMonogramFallback(accentColor, isDark),
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            return Padding(
-                              padding: EdgeInsets.all(size * 0.16),
-                              child: child,
-                            );
-                          }
-                          return _buildMonogramFallback(accentColor, isDark);
-                        },
-                      );
-                    }
-                    return _buildMonogramFallback(accentColor, isDark);
-                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildMonogramFallback(accentColor, isDark),
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) {
                       return Padding(

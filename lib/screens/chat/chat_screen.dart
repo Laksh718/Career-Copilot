@@ -12,6 +12,7 @@ import '../../widgets/bottom_navigation.dart';
 import '../../widgets/textured_background.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/gemini_api_key_sheet.dart';
 
 import '../home/home_screen.dart';
 import '../applications/applications_screen.dart';
@@ -36,7 +37,14 @@ class _ChatMessage {
 }
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final int selectedIndex;
+  final Function(int)? onNavigate;
+
+  const ChatScreen({
+    super.key,
+    this.selectedIndex = 3,
+    this.onNavigate,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -47,6 +55,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
+  bool _showGeminiBanner = true;
   int _tab = 0;
 
   final List<Map<String, dynamic>> _promptCategories = [
@@ -355,18 +364,22 @@ class _ChatScreenState extends State<ChatScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Text(
-                                      'Career Copilot',
-                                      style: TextStyle(
-                                        color: AppTheme.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.3,
+                                    const Flexible(
+                                      child: Text(
+                                        'Career Copilot',
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        style: TextStyle(
+                                          color: AppTheme.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: -0.3,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [AppTheme.orange, Color(0xFFFF8A5C)],
@@ -392,22 +405,39 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ],
                                 ),
                                 const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 7,
-                                      height: 7,
-                                      decoration: const BoxDecoration(
-                                        color: AppTheme.vibrantGreen,
-                                        shape: BoxShape.circle,
+                                Consumer<AIController>(
+                                  builder: (context, aiCtrl, _) {
+                                    final isGemini = aiCtrl.isGeminiActive;
+                                    return GestureDetector(
+                                      onTap: () => showGeminiApiKeySheet(context),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 7,
+                                            height: 7,
+                                            decoration: BoxDecoration(
+                                              color: isGemini ? AppTheme.vibrantGreen : AppTheme.orange,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(begin: 0.8, end: 1.3, duration: 1200.ms),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                            child: Text(
+                                              isGemini ? 'Gemini 1.5 Active' : 'Offline AI • Tap to connect',
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                              style: TextStyle(
+                                                color: isGemini ? const Color(0xFF6EE7B7) : const Color(0xFFFDBA74),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(begin: 0.8, end: 1.3, duration: 1200.ms),
-                                    const SizedBox(width: 6),
-                                    const Text(
-                                      'Online • Copilot Engine',
-                                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11, fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -473,6 +503,86 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         ),
+            // ── Gemini Activation Quick Banner (Offline Mode) ──
+            if (_tab == 0)
+              Consumer<AIController>(
+                builder: (context, aiCtrl, _) {
+                  if (aiCtrl.isGeminiActive || !_showGeminiBanner) return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.orange.withValues(alpha: isDark ? 0.20 : 0.12),
+                          const Color(0xFFFF8A5C).withValues(alpha: isDark ? 0.10 : 0.06),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: AppTheme.orange.withValues(alpha: isDark ? 0.35 : 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppTheme.orange.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.bolt_rounded, color: AppTheme.orange, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'Local AI Mode',
+                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                              ),
+                              Text(
+                                'Connect Gemini API Key for live AI reasoning.',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => showGeminiApiKeySheet(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: const Text('Connect', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => setState(() => _showGeminiBanner = false),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 14,
+                              color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
 
             // ── Main Body ──
             Expanded(

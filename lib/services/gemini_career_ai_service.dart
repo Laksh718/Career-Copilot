@@ -14,6 +14,7 @@ class GeminiCareerAIService implements CareerAIService {
   final SharedPreferences? _prefs;
   String _apiKey = '';
   GenerativeModel? _model;
+  GenerativeModel? _fallbackModel;
   final MockCareerAIService _fallbackService = MockCareerAIService();
 
   GeminiCareerAIService({SharedPreferences? prefs}) : _prefs = prefs {
@@ -44,9 +45,59 @@ class GeminiCareerAIService implements CareerAIService {
         model: 'gemini-1.5-flash',
         apiKey: _apiKey,
       );
+      _fallbackModel = GenerativeModel(
+        model: 'gemini-pro',
+        apiKey: _apiKey,
+      );
     } else {
       _model = null;
+      _fallbackModel = null;
     }
+  }
+
+  /// Helper to generate content with gemini-1.5-flash, falling back to gemini-pro if unsupported
+  Future<GenerateContentResponse> _generateContentWithFallback(
+    List<Content> contents, {
+    GenerationConfig? generationConfig,
+  }) async {
+    final primary = _model;
+    if (primary == null) {
+      throw StateError('Gemini API key is not configured');
+    }
+    try {
+      return await primary.generateContent(contents, generationConfig: generationConfig);
+    } catch (e) {
+      final errStr = e.toString().toLowerCase();
+      if (_fallbackModel != null &&
+          (errStr.contains('not found') ||
+              errStr.contains('404') ||
+              errStr.contains('unsupported') ||
+              errStr.contains('model'))) {
+        try {
+          return await _fallbackModel!.generateContent(contents, generationConfig: generationConfig);
+        } catch (_) {
+          rethrow;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  String _formatUserFriendlyError(Object e) {
+    final str = e.toString();
+    if (str.contains('API_KEY_INVALID') || str.contains('API key not valid')) {
+      return 'Invalid API key. Check your key at aistudio.google.com';
+    }
+    if (str.contains('RESOURCE_EXHAUSTED') || str.contains('429') || str.contains('quota')) {
+      return 'Gemini rate limit / quota reached';
+    }
+    if (str.contains('PERMISSION_DENIED')) {
+      return 'Permission denied for this API key';
+    }
+    if (str.contains('SocketException') || str.contains('Network') || str.contains('Failed to fetch') || str.contains('XMLHttpRequest')) {
+      return 'Network connection error';
+    }
+    return str.replaceAll(RegExp(r'^[A-Za-z0-9_]+Exception:\s*'), '').trim();
   }
 
   /// Whether real Gemini AI model is currently initialized
@@ -71,6 +122,7 @@ class GeminiCareerAIService implements CareerAIService {
       await _prefs.remove(prefKey);
     }
     _model = null;
+    _fallbackModel = null;
   }
 
   /// Test a given API key or the current key with a minimal request
@@ -88,13 +140,25 @@ class GeminiCareerAIService implements CareerAIService {
         model: 'gemini-1.5-flash',
         apiKey: keyToTest,
       );
-      final res = await testModel.generateContent([Content.text('Respond with "OK"')]);
-      if (res.text != null && res.text!.isNotEmpty) {
-        return null; // Success! null means no error
+      try {
+        final res = await testModel.generateContent([Content.text('Respond with "OK"')]);
+        if (res.text != null && res.text!.isNotEmpty) {
+          return null; // Success! null means no error
+        }
+      } catch (e) {
+        // Fallback test with gemini-pro
+        final testPro = GenerativeModel(
+          model: 'gemini-pro',
+          apiKey: keyToTest,
+        );
+        final res = await testPro.generateContent([Content.text('Respond with "OK"')]);
+        if (res.text != null && res.text!.isNotEmpty) {
+          return null;
+        }
       }
       return 'Received empty response from Gemini API.';
     } catch (e) {
-      return e.toString();
+      return _formatUserFriendlyError(e);
     }
   }
 
@@ -132,7 +196,7 @@ Message:
 ''';
 
     try {
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       
       String text = response.text ?? '{}';
       // Clean up potential markdown formatting if the model still includes it
@@ -196,7 +260,7 @@ Message:
     if (model == null) return _fallbackService.draftReply(application);
     try {
       final prompt = 'Draft a short, professional email reply confirming receipt and interest for a ${application.role} position at ${application.company}. Keep it under 50 words.';
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       return response.text ?? await _fallbackService.draftReply(application);
     } catch (e) {
       return _fallbackService.draftReply(application);
@@ -210,7 +274,7 @@ Message:
     try {
       if (application.requiredDocuments.isEmpty) return "No documents required.";
       final prompt = 'Briefly explain the purpose of these required documents for a job application: ${application.requiredDocuments.map((e) => e.name).join(', ')}';
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       return response.text ?? await _fallbackService.explainRequirements(application);
     } catch (e) {
       return _fallbackService.explainRequirements(application);
@@ -223,7 +287,7 @@ Message:
     if (model == null) return _fallbackService.generateInterviewQuestions(application);
     try {
       final prompt = 'Generate 3 common interview questions for a ${application.role} at ${application.company}. Return them as a JSON list of strings without markdown blocks.';
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       String text = response.text ?? '[]';
       text = text.replaceAll('```json', '').replaceAll('```', '').trim();
       List<dynamic> list = jsonDecode(text);
@@ -239,7 +303,7 @@ Message:
     if (model == null) return _fallbackService.summarizeOpportunity(application);
     try {
       final prompt = 'Write a 1-sentence summary of this opportunity: Role: ${application.role}, Company: ${application.company}, Deadline: ${application.deadline}';
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       return response.text?.trim() ?? await _fallbackService.summarizeOpportunity(application);
     } catch (e) {
       return _fallbackService.summarizeOpportunity(application);
@@ -291,7 +355,7 @@ One high-leverage career or interview tip relevant to this topic.
 Keep the response concise, punchy, well-structured, and easy to read on mobile.
 ''';
 
-      final response = await model.generateContent([Content.text(prompt)]);
+      final response = await _generateContentWithFallback([Content.text(prompt)]);
       final text = response.text?.trim();
       if (text != null && text.isNotEmpty) {
         return text;
@@ -299,7 +363,15 @@ Keep the response concise, punchy, well-structured, and easy to read on mobile.
       return await _fallbackService.chatWithCareerCoach(userMessage, applications);
     } catch (e) {
       debugPrint('Gemini chat error, using fallback: $e');
-      return _fallbackService.chatWithCareerCoach(userMessage, applications);
+      final fallbackReply = await _fallbackService.chatWithCareerCoach(userMessage, applications);
+      final errorMsg = _formatUserFriendlyError(e);
+      if (fallbackReply.startsWith('### SUMMARY\n')) {
+        return fallbackReply.replaceFirst(
+          '### SUMMARY\n',
+          '### SUMMARY\n[Gemini: $errorMsg • Offline AI response below]\n\n',
+        );
+      }
+      return "### SUMMARY\n[Gemini: $errorMsg • Offline AI response below]\n\n$fallbackReply";
     }
   }
 }
