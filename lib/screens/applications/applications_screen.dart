@@ -8,6 +8,7 @@ import '../../models/application.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/application_card.dart';
 import '../../widgets/textured_background.dart';
+import '../../widgets/app_logo.dart';
 
 
 import '../home/home_screen.dart';
@@ -119,13 +120,31 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('Opportunities',
-                                style: TextStyle(color: AppTheme.white, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                            const SizedBox(height: 4),
-                            Text('$totalCount tracked across career & events',
-                                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
-                          ])),
+                          const AppLogo(size: 38, onDark: true),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Opportunities',
+                                    style: TextStyle(color: AppTheme.white, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '$totalCount tracked across career & events',
+                                  style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _onNavTap(5),
                             child: Container(

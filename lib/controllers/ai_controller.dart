@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../services/career_ai_service.dart';
+import '../services/gemini_career_ai_service.dart';
 import '../models/career_extraction.dart';
-
 import '../models/application.dart';
 
 class AIController extends ChangeNotifier {
@@ -11,6 +11,48 @@ class AIController extends ChangeNotifier {
   bool get isAnalyzing => _isAnalyzing;
 
   AIController(this._aiService);
+
+  bool get isGeminiService => _aiService is GeminiCareerAIService;
+
+  bool get isGeminiActive {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      return service.isConfigured;
+    }
+    return false;
+  }
+
+  String get currentApiKey {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      return service.apiKey;
+    }
+    return '';
+  }
+
+  Future<void> updateApiKey(String key) async {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      await service.setApiKey(key);
+      notifyListeners();
+    }
+  }
+
+  Future<void> clearApiKey() async {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      await service.clearApiKey();
+      notifyListeners();
+    }
+  }
+
+  Future<String?> testApiKey([String? testKey]) async {
+    final service = _aiService;
+    if (service is GeminiCareerAIService) {
+      return await service.testConnection(testKey);
+    }
+    return 'Gemini service is not active.';
+  }
 
   Future<CareerExtraction> analyzeMessage(String message) async {
     _isAnalyzing = true;
@@ -29,4 +71,3 @@ class AIController extends ChangeNotifier {
     return await _aiService.chatWithCareerCoach(userMessage, applications);
   }
 }
-

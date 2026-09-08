@@ -10,6 +10,7 @@ import '../../models/reminder.dart';
 import '../../widgets/textured_background.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/company_logo.dart';
+import '../../widgets/app_logo.dart';
 import '../home/home_screen.dart';
 import '../applications/applications_screen.dart';
 import '../add_opportunity/add_opportunity_screen.dart';
@@ -564,40 +565,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(100),
-                                          border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Container(
-                                              width: 7,
-                                              height: 7,
-                                              decoration: const BoxDecoration(
-                                                color: Color(0xFF10B981),
-                                                shape: BoxShape.circle,
-                                                boxShadow: [
-                                                  BoxShadow(color: Color(0xFF10B981), blurRadius: 6, spreadRadius: 1),
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            const Text(
-                                              'ALARMS & NOTIFICATIONS',
-                                              style: TextStyle(
-                                                color: AppTheme.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.8,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
+                                      const AppLogo(size: 38, onDark: true),
                                       ElevatedButton.icon(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppTheme.orange,

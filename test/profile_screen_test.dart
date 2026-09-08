@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:career_copilot/controllers/application_controller.dart';
 import 'package:career_copilot/controllers/theme_controller.dart';
+import 'package:career_copilot/controllers/ai_controller.dart';
+import 'package:career_copilot/services/mock_career_ai_service.dart';
 import 'package:career_copilot/repositories/application_repository.dart';
 import 'package:career_copilot/screens/profile/profile_screen.dart';
 
@@ -19,6 +21,7 @@ void main() {
         providers: [
           ChangeNotifierProvider(create: (_) => ApplicationController(repo)),
           ChangeNotifierProvider(create: (_) => ThemeController(prefs)),
+          ChangeNotifierProvider(create: (_) => AIController(MockCareerAIService())),
         ],
         child: const MaterialApp(
           home: ProfileScreen(),

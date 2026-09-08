@@ -8,6 +8,8 @@ import '../../controllers/theme_controller.dart';
 import '../../models/application.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/textured_background.dart';
+import '../../widgets/app_logo.dart';
+import '../../controllers/ai_controller.dart';
 
 
 import '../home/home_screen.dart';
@@ -60,6 +62,221 @@ class _ProfileScreenState extends State<ProfileScreen> {
       type: MaterialType.transparency,
       child: Container(
         decoration: AppTheme.heroDropDecoration(flightContext),
+      ),
+    );
+  }
+
+  void _showApiKeySheet(BuildContext context) {
+    final aiCtrl = context.read<AIController>();
+    final currentKey = aiCtrl.currentApiKey;
+    final textController = TextEditingController(text: currentKey);
+    bool obscure = true;
+    bool isTesting = false;
+    String? testResult;
+    bool testSuccess = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              margin: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDark ? AppTheme.darkCard : AppTheme.white,
+                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                border: Border.all(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.key_rounded, color: AppTheme.orange, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Gemini AI API Key',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Powers real-time parsing and AI career coaching',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: textController,
+                    obscureText: obscure,
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                      color: isDark ? AppTheme.textLight : AppTheme.textDark,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Enter Gemini API key (AIzaSy...)',
+                      hintStyle: TextStyle(
+                        fontFamily: 'sans-serif',
+                        fontSize: 13,
+                        color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                      ),
+                      filled: true,
+                      fillColor: isDark ? AppTheme.darkSurface : AppTheme.lightBg,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppTheme.orange, width: 1.5),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          size: 18,
+                          color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                        ),
+                        onPressed: () => setSheetState(() => obscure = !obscure),
+                      ),
+                    ),
+                  ),
+                  if (testResult != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: (testSuccess ? AppTheme.vibrantGreen : AppTheme.vibrantRed).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: (testSuccess ? AppTheme.vibrantGreen : AppTheme.vibrantRed).withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            testSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+                            size: 16,
+                            color: testSuccess ? AppTheme.vibrantGreen : AppTheme.vibrantRed,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              testResult!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: testSuccess ? AppTheme.vibrantGreen : AppTheme.vibrantRed,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isTesting
+                              ? null
+                              : () async {
+                                  setSheetState(() {
+                                    isTesting = true;
+                                    testResult = null;
+                                  });
+                                  final err = await aiCtrl.testApiKey(textController.text.trim());
+                                  setSheetState(() {
+                                    isTesting = false;
+                                    testSuccess = (err == null);
+                                    testResult = (err == null) ? 'API key verified successfully!' : err;
+                                  });
+                                },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                          ),
+                          child: isTesting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.orange),
+                                )
+                              : const Text('Test Key', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final key = textController.text.trim();
+                            await aiCtrl.updateApiKey(key);
+                            if (ctx.mounted) Navigator.pop(ctx);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(key.isNotEmpty
+                                      ? 'Gemini API key saved & activated!'
+                                      : 'Gemini API key cleared (using local AI).'),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text('Save Key', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -137,9 +354,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: SafeArea(
                           bottom: false,
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
                             child: Column(
                               children: [
+                                // Top bar with AppLogo and Pro Pill
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const AppLogo(size: 36, onDark: true),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(100),
+                                        border: Border.all(color: Colors.white12),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.verified_rounded, color: AppTheme.orange, size: 12),
+                                          SizedBox(width: 5),
+                                          Text('COPILOT PRO', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
                                 // Avatar
                                 Container(
                                   width: 88, height: 88,
@@ -301,6 +542,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
+                // ── AI Intelligence & Gemini Engine ──
+                Consumer<AIController>(
+                  builder: (context, aiCtrl, _) {
+                    final isGeminiActive = aiCtrl.isGeminiActive;
+                    return SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const _SectionHeader('AI Intelligence & Gemini Engine'),
+                            const SizedBox(height: 10),
+                            _SettingsCard(children: [
+                              _SettingsRow(
+                                icon: Icons.psychology_rounded,
+                                iconColor: isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange,
+                                title: 'Gemini AI Status',
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: (isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: (isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange).withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        isGeminiActive ? 'Gemini 1.5 Flash' : 'Local Fallback',
+                                        style: TextStyle(
+                                          color: isGeminiActive ? AppTheme.vibrantGreen : AppTheme.orange,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const _Separator(),
+                              _SettingsRow(
+                                icon: Icons.key_rounded,
+                                iconColor: AppTheme.vibrantPurple,
+                                title: 'Configure Gemini API Key',
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      aiCtrl.currentApiKey.isNotEmpty ? '••••••••' : 'Not Configured',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF9CA3AF)),
+                                  ],
+                                ),
+                                onTap: () => _showApiKeySheet(context),
+                              ),
+                            ]),
+                          ],
+                        ).animate().fadeIn(delay: 150.ms),
+                      ),
+                    );
+                  },
+                ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
                 // ── Career Analytics ──
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -376,6 +699,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ]),
                       ],
                     ).animate().fadeIn(delay: 300.ms),
+                  ),
+                ),
+
+                const SliverToBoxAdapter(child: SizedBox(height: 32)),
+
+                // App Brand Footer
+                SliverToBoxAdapter(
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const AppLogo(size: 42),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Career Copilot',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'AI-Powered Career Intelligence • v1.0.0',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? AppTheme.textMutedDark : AppTheme.textMutedLight,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

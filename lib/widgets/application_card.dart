@@ -106,7 +106,9 @@ class _ApplicationCardState extends State<ApplicationCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Category Tag & Badges Row
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
@@ -125,7 +127,6 @@ class _ApplicationCardState extends State<ApplicationCard> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
@@ -176,12 +177,16 @@ class _ApplicationCardState extends State<ApplicationCard> {
                           if (widget.application.stipend.isNotEmpty) ...[
                             Icon(Icons.monetization_on_outlined, size: 12, color: catColor),
                             const SizedBox(width: 3),
-                            Text(
-                              widget.application.stipend,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: catColor,
+                            Flexible(
+                              child: Text(
+                                widget.application.stipend,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: catColor,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),

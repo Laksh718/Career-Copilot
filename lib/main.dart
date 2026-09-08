@@ -17,7 +17,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   
   final appRepository = ApplicationRepository(prefs);
-  final aiService = GeminiCareerAIService();
+  final aiService = GeminiCareerAIService(prefs: prefs);
 
   await NotificationService().init();
 

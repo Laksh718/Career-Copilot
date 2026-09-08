@@ -18,6 +18,7 @@ import '../application_details/application_details_screen.dart';
 import '../chat/chat_screen.dart';
 import '../reminders/reminders_screen.dart';
 import '../../widgets/company_logo.dart';
+import '../../widgets/app_logo.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -488,8 +489,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       body: Consumer<ApplicationController>(
         builder: (context, controller, child) {
           final apps = controller.applications;
-          final selectedEvents = _getEventsForDay(_selectedDay!, apps);
-          final filteredEvents = _filterEvents(selectedEvents, _selectedDay!);
+          final currentDay = _selectedDay ?? _focusedDay;
+          final selectedEvents = _getEventsForDay(currentDay, apps);
+          final filteredEvents = _filterEvents(selectedEvents, currentDay);
 
           // Monthly stats
           final monthInterviews = apps.where((a) {
@@ -522,6 +524,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           // Top Header Row: Title, Stats & Actions
                           Row(
                             children: [
+                              const AppLogo(size: 38, onDark: true),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,14 +714,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           decoration: AppTheme.cardDecoration(context, borderRadius: AppTheme.radiusXl),
                           padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
                           child: TableCalendar<Application>(
-                            firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                            lastDay: DateTime.now().add(const Duration(days: 365)),
+                            firstDay: DateTime.utc(2020, 1, 1),
+                            lastDay: DateTime.utc(2030, 12, 31),
                             focusedDay: _focusedDay,
                             calendarFormat: _calendarFormat,
+                            availableCalendarFormats: const {
+                              CalendarFormat.month: 'Month',
+                              CalendarFormat.twoWeeks: '2 Weeks',
+                            },
                             onFormatChanged: (format) {
                               setState(() => _calendarFormat = format);
                             },
-                            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                            onPageChanged: (focusedDay) {
+                              setState(() => _focusedDay = focusedDay);
+                            },
+                            selectedDayPredicate: (day) => isSameDay(_selectedDay ?? _focusedDay, day),
                             onDaySelected: (selectedDay, focusedDay) {
                               setState(() {
                                 _selectedDay = selectedDay;
@@ -922,7 +933,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              DateFormat('EEEE, MMMM d').format(_selectedDay!),
+                              DateFormat('EEEE, MMMM d').format(_selectedDay ?? _focusedDay),
                               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: -0.2,
@@ -983,7 +994,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: _AgendaCard(
                               app: filteredEvents[index],
-                              selectedDay: _selectedDay!,
+                              selectedDay: _selectedDay ?? _focusedDay,
                               parseDate: _parseDateString,
                               onOpenDetails: () {
                                 Navigator.push(

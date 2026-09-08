@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../app/theme.dart';
+
 
 /// Floating Liquid Glass Bottom Navigation Dock
 /// Features:
@@ -124,7 +124,7 @@ class BottomNavigation extends StatelessWidget {
                                   ),
                                 ),
                                 // Symmetrical center gap reserved for the floating Liquid Add button
-                                const SizedBox(width: 56),
+                                const SizedBox(width: 48),
                                 Expanded(
                                   child: _NavItem(
                                     icon: Icons.calendar_month_rounded,
@@ -221,7 +221,7 @@ class _NavItemState extends State<_NavItem> {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   curve: Curves.easeOutCubic,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.orange.withValues(alpha: isDark ? 0.22 : 0.14)
@@ -304,9 +304,38 @@ class _LiquidAddButton extends StatefulWidget {
   State<_LiquidAddButton> createState() => _LiquidAddButtonState();
 }
 
-class _LiquidAddButtonState extends State<_LiquidAddButton> {
+class _LiquidAddButtonState extends State<_LiquidAddButton>
+    with SingleTickerProviderStateMixin {
   bool _isPressed = false;
   bool _isHovered = false;
+  late final AnimationController _entryController;
+  late final Animation<double> _slideAnim;
+  late final Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _slideAnim = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOutBack,
+    );
+    _fadeAnim = CurvedAnimation(
+      parent: _entryController,
+      curve: Curves.easeOut,
+    );
+    // Play once — slides up from inside the nav bar
+    _entryController.forward();
+  }
+
+  @override
+  void dispose() {
+    _entryController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -421,13 +450,18 @@ class _LiquidAddButtonState extends State<_LiquidAddButton> {
       return content;
     }
 
-    return content
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scaleXY(
-          begin: 1.0,
-          end: 1.04,
-          duration: 2200.ms,
-          curve: Curves.easeInOut,
+    // One-shot slide from inside the nav bar — no repeat, no glow pulse
+    return AnimatedBuilder(
+      animation: _entryController,
+      builder: (context, child) {
+        final slide = (1.0 - _slideAnim.value) * 64.0; // px offset from nav bar
+        final opacity = _fadeAnim.value.clamp(0.0, 1.0);
+        return Transform.translate(
+          offset: Offset(0, slide),
+          child: Opacity(opacity: opacity, child: child),
         );
+      },
+      child: content,
+    );
   }
 }

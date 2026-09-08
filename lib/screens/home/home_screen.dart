@@ -10,7 +10,7 @@ import '../../models/application.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/application_card.dart';
 import '../../widgets/textured_background.dart';
-
+import '../../widgets/app_logo.dart';
 
 import '../add_opportunity/add_opportunity_screen.dart';
 import '../add_opportunity/analysis_result_screen.dart';
@@ -309,46 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Flexible(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(100),
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 7,
-                                          height: 7,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF10B981),
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(color: Color(0xFF10B981), blurRadius: 6, spreadRadius: 1),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        const Flexible(
-                                          child: Text(
-                                            'COPILOT • CAREER & OPPORTUNITIES',
-                                            style: TextStyle(
-                                              color: AppTheme.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              letterSpacing: 0.8,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                // Logo badge instead of text pill
+                                const AppLogo(size: 38, onDark: true),
                                 const SizedBox(width: 12),
                                 GestureDetector(
                                   onTap: () => _onNavTap(5),
@@ -560,23 +522,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.orange.withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    spotlightApp.interviewDate.isNotEmpty
-                                        ? spotlightApp.interviewDate
-                                        : spotlightApp.deadline,
-                                    style: const TextStyle(
-                                      color: AppTheme.orange,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
+                                Flexible(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.orange.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    child: Text(
+                                      spotlightApp.interviewDate.isNotEmpty
+                                          ? spotlightApp.interviewDate
+                                          : spotlightApp.deadline,
+                                      style: const TextStyle(
+                                        color: AppTheme.orange,
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -708,13 +672,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Tracked Opportunities',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                            Expanded(
+                              child: Text(
+                                'Tracked Opportunities',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
+                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () => _onNavTap(1),
                               child: const Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
                                     'View All',
@@ -945,20 +915,25 @@ class _CategoryStatPill extends StatelessWidget {
             children: [
               Icon(icon, color: color, size: 16),
               const SizedBox(height: 3),
-              Text(
-                value,
-                style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900),
+                ),
               ),
               const SizedBox(height: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

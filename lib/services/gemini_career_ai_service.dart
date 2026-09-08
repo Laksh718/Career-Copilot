@@ -1,27 +1,102 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 import '../models/application.dart';
 import '../models/career_extraction.dart';
 import 'career_ai_service.dart';
 import 'mock_career_ai_service.dart';
 
-
 class GeminiCareerAIService implements CareerAIService {
-  // Configured securely via --dart-define=GEMINI_API_KEY=... or environment variable
-  static const String _apiKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
-  
-  final GenerativeModel? _model;
+  static const String prefKey = 'gemini_api_key';
+
+  final SharedPreferences? _prefs;
+  String _apiKey = '';
+  GenerativeModel? _model;
   final MockCareerAIService _fallbackService = MockCareerAIService();
 
-  GeminiCareerAIService()
-      : _model = _apiKey.isNotEmpty
-            ? GenerativeModel(
-                model: 'gemini-2.5-flash',
-                apiKey: _apiKey,
-              )
-            : null;
+  GeminiCareerAIService({SharedPreferences? prefs}) : _prefs = prefs {
+    _init();
+  }
 
+  void _init() {
+    // 1. Check SharedPreferences
+    final savedKey = _prefs?.getString(prefKey);
+    if (savedKey != null && savedKey.trim().isNotEmpty) {
+      _apiKey = savedKey.trim();
+    } else {
+      // 2. Check --dart-define
+      const envKey = String.fromEnvironment('GEMINI_API_KEY', defaultValue: '');
+      if (envKey.isNotEmpty) {
+        _apiKey = envKey.trim();
+      } else {
+        // 3. Fallback to ApiConfig
+        _apiKey = ApiConfig.geminiApiKey.trim();
+      }
+    }
+    _initModel();
+  }
+
+  void _initModel() {
+    if (_apiKey.isNotEmpty) {
+      _model = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: _apiKey,
+      );
+    } else {
+      _model = null;
+    }
+  }
+
+  /// Whether real Gemini AI model is currently initialized
+  bool get isConfigured => _model != null && _apiKey.isNotEmpty;
+
+  /// Current configured API key (masked or raw)
+  String get apiKey => _apiKey;
+
+  /// Update the Gemini API key dynamically
+  Future<void> setApiKey(String key) async {
+    _apiKey = key.trim();
+    if (_prefs != null) {
+      await _prefs.setString(prefKey, _apiKey);
+    }
+    _initModel();
+  }
+
+  /// Remove saved API key and revert to fallback
+  Future<void> clearApiKey() async {
+    _apiKey = '';
+    if (_prefs != null) {
+      await _prefs.remove(prefKey);
+    }
+    _model = null;
+  }
+
+  /// Test a given API key or the current key with a minimal request
+  Future<String?> testConnection([String? candidateKey]) async {
+    final keyToTest = (candidateKey != null && candidateKey.trim().isNotEmpty)
+        ? candidateKey.trim()
+        : _apiKey;
+
+    if (keyToTest.isEmpty) {
+      return 'API key is empty. Please enter a valid Gemini API key.';
+    }
+
+    try {
+      final testModel = GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: keyToTest,
+      );
+      final res = await testModel.generateContent([Content.text('Respond with "OK"')]);
+      if (res.text != null && res.text!.isNotEmpty) {
+        return null; // Success! null means no error
+      }
+      return 'Received empty response from Gemini API.';
+    } catch (e) {
+      return e.toString();
+    }
+  }
 
   @override
   Future<CareerExtraction> analyzeMessage(String message) async {
@@ -113,7 +188,6 @@ Message:
       debugPrint('Falling back to local AI extractor: $e');
       return _fallbackService.analyzeMessage(message);
     }
-
   }
 
   @override

@@ -11,6 +11,7 @@ import '../../models/application.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/textured_background.dart';
 import '../../widgets/status_chip.dart';
+import '../../widgets/app_logo.dart';
 
 import '../home/home_screen.dart';
 import '../applications/applications_screen.dart';
@@ -345,7 +346,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               child: const Icon(Icons.arrow_back_rounded, color: AppTheme.white, size: 18),
                             ),
                           ),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
+                          const AppLogo(size: 36, onDark: true),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

@@ -8,6 +8,7 @@ import '../../controllers/ai_controller.dart';
 import '../../widgets/animated_bg.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/bottom_navigation.dart';
+import '../../widgets/app_logo.dart';
 
 import '../../services/shared_ingestion_service.dart';
 import '../home/home_screen.dart';
@@ -161,14 +162,7 @@ class _AddOpportunityScreenState extends State<AddOpportunityScreen> {
                 // Header
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryYellow.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.bolt_rounded, color: AppTheme.primaryYellow, size: 24),
-                    ),
+                    const AppLogo(size: 42),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

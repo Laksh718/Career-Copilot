@@ -9,6 +9,7 @@ import '../../models/application.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/document_checklist.dart';
 import '../../widgets/company_logo.dart';
+import '../../widgets/app_logo.dart';
 
 class ApplicationDetailsScreen extends StatefulWidget {
   final Application application;
@@ -115,9 +116,8 @@ Tracked with Career Copilot
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.vibrantRed,
-              foregroundColor: AppTheme.statusRedText,
+              foregroundColor: Colors.white,  // white text on red
               elevation: 0,
-              side: const BorderSide(color: AppTheme.statusRedText),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () {
@@ -125,7 +125,7 @@ Tracked with Career Copilot
               context.read<ApplicationController>().deleteApplication(_app.id);
               Navigator.pop(context);
             },
-            child: const Text('Delete'),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -267,12 +267,18 @@ Tracked with Career Copilot
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      decoration: AppTheme.flatDecoration(context, borderRadius: 14),
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).iconTheme.color, size: 18),
-                        onPressed: () => Navigator.pop(context),
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          decoration: AppTheme.flatDecoration(context, borderRadius: 14),
+                          child: IconButton(
+                            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).iconTheme.color, size: 18),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const AppLogo(size: 34),
+                      ],
                     ),
                     Row(
                       children: [
