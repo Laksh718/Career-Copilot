@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../app/theme.dart';
 import '../../controllers/application_controller.dart';
+import '../../controllers/ai_controller.dart';
+import '../../controllers/reminder_controller.dart';
 import '../../models/application.dart';
+import '../../models/reminder.dart';
+import '../../models/required_document.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/document_checklist.dart';
 import '../../widgets/company_logo.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/gradient_button.dart';
 
 class ApplicationDetailsScreen extends StatefulWidget {
   final Application application;
@@ -39,14 +46,52 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
   }
 
   void _updateStatus(ApplicationStatus newStatus) {
+    if (_app.status == newStatus) return;
     setState(() {
       _app = _app.copyWith(status: newStatus);
     });
     context.read<ApplicationController>().updateApplication(_app);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text('Stage updated to ${_statusLabel(newStatus)}'),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  String _statusLabel(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.applied:
+        return _app.category == OpportunityCategory.hackathon
+            ? 'Registered'
+            : (_app.category == OpportunityCategory.event ? "RSVP'd" : 'Applied');
+      case ApplicationStatus.actionRequired:
+        return _app.category == OpportunityCategory.hackathon
+            ? 'Building'
+            : (_app.category == OpportunityCategory.event ? 'Waitlisted' : 'Action Required');
+      case ApplicationStatus.interview:
+        return _app.category == OpportunityCategory.hackathon
+            ? 'Demo Day'
+            : (_app.category == OpportunityCategory.event ? 'Attending' : 'Interview');
+      case ApplicationStatus.waiting:
+        return _app.category == OpportunityCategory.hackathon
+            ? 'Results'
+            : (_app.category == OpportunityCategory.event ? 'Completed' : 'Offer / Waiting');
+    }
   }
 
   void _toggleDocument(int index, bool isCompleted) {
-    final docs = List.of(_app.requiredDocuments);
+    final docs = List<RequiredDocument>.from(_app.requiredDocuments);
     docs[index] = docs[index].copyWith(isCompleted: isCompleted);
     setState(() {
       _app = _app.copyWith(requiredDocuments: docs);
@@ -54,14 +99,83 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
     context.read<ApplicationController>().updateApplication(_app);
   }
 
+  void _addDeliverableDialog() {
+    final docController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkCard
+            : AppTheme.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.borderDark
+                : AppTheme.borderLight,
+          ),
+        ),
+        title: const Text('Add Deliverable / Requirement', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: docController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'e.g. System Design Slides, Video Demo',
+            filled: true,
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF151C2A)
+                : const Color(0xFFF1F5F9),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.orange,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final text = docController.text.trim();
+              if (text.isNotEmpty) {
+                final docs = List<RequiredDocument>.from(_app.requiredDocuments)
+                  ..add(RequiredDocument(name: text, isCompleted: false));
+                setState(() {
+                  _app = _app.copyWith(requiredDocuments: docs);
+                });
+                context.read<ApplicationController>().updateApplication(_app);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _saveNotes() {
     setState(() {
-      _app = _app.copyWith(notes: _notesController.text);
+      _app = _app.copyWith(notes: _notesController.text.trim());
     });
     context.read<ApplicationController>().updateApplication(_app);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Notes saved successfully'),
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Text('Notes saved successfully!'),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10B981),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -73,8 +187,9 @@ class _ApplicationDetailsScreenState extends State<ApplicationDetailsScreen> {
 OPPORTUNITY SUMMARY
 Company: ${_app.company}
 Role: ${_app.role}
+Category: ${_app.category.label}
 Status: ${_app.status.name.toUpperCase()}
-${_app.interviewDate.isNotEmpty ? "Interview: ${_app.interviewDate} at ${_app.interviewTime}\n" : ""}${_app.deadline.isNotEmpty ? "Deadline: ${_app.deadline}\n" : ""}${_app.stipend.isNotEmpty ? "Compensation: ${_app.stipend}\n" : ""}
+${_app.interviewDate.isNotEmpty ? "Interview: ${_app.interviewDate} at ${_app.interviewTime}\n" : ""}${_app.deadline.isNotEmpty ? "Deadline: ${_app.deadline}\n" : ""}${_app.stipend.isNotEmpty ? "Compensation: ${_app.stipend}\n" : ""}${_app.location.isNotEmpty ? "Location: ${_app.location} (${_app.workMode})\n" : ""}
 Tracked with Career Copilot
 ''';
 
@@ -83,11 +198,12 @@ Tracked with Career Copilot
       SnackBar(
         content: const Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: AppTheme.primaryYellow, size: 20),
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
             SizedBox(width: 10),
-            Text('Application summary copied!'),
+            Text('Opportunity summary copied to clipboard!'),
           ],
         ),
+        backgroundColor: AppTheme.orange,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -98,14 +214,20 @@ Tracked with Career Copilot
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkCard
+            : AppTheme.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Theme.of(context).dividerColor),
+          side: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.borderDark
+                : AppTheme.borderLight,
+          ),
         ),
         title: Text('Delete Opportunity?', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
         content: Text(
-          'Are you sure you want to remove ${_app.company} (${_app.role}) from your tracking list?',
+          'Are you sure you want to remove ${_app.company} (${_app.role}) from your pipeline?',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
         ),
         actions: [
@@ -116,7 +238,7 @@ Tracked with Career Copilot
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.vibrantRed,
-              foregroundColor: Colors.white,  // white text on red
+              foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -132,105 +254,345 @@ Tracked with Career Copilot
     );
   }
 
-  Future<void> _runAIAction(String actionTitle, String result) async {
-    setState(() => _isGeneratingAI = true);
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _isGeneratingAI = false);
+  // --- Set Alarm / Reminder Sheet ---
+  void _openSetAlarmSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    DateTime alarmDate = DateTime.now().add(const Duration(hours: 3));
+    TimeOfDay alarmTime = TimeOfDay.fromDateTime(alarmDate);
+    final titleController = TextEditingController(
+      text: '${_app.company} ${_app.role} Prep & Attendance',
+    );
+    bool soundEnabled = true;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: AppTheme.flatDecoration(context, borderRadius: 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.bolt_rounded, color: AppTheme.primaryYellow, size: 24),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    actionTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: Theme.of(context).textTheme.bodySmall?.color),
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ],
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Material(
+            color: isDark ? AppTheme.darkCard : AppTheme.white,
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Theme.of(context).dividerColor),
-              ),
-              child: SelectableText(
-                result,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryYellow,
-                      side: const BorderSide(color: AppTheme.primaryYellow),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            clipBehavior: Clip.antiAlias,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.alarm_add_rounded, color: AppTheme.orange, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Set Opportunity Alarm',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                            Text(
+                              'Linked to ${_app.company}',
+                              style: TextStyle(fontSize: 12, color: _app.category.color, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        onPressed: () => Navigator.pop(sheetCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: titleController,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    decoration: InputDecoration(
+                      labelText: 'Alarm Purpose / Title',
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF151C2A) : const Color(0xFFF1F5F9),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                          label: Text(DateFormat('MMM d, yyyy').format(alarmDate), style: const TextStyle(fontSize: 12.5)),
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: ctx,
+                              initialDate: alarmDate,
+                              firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                              lastDate: DateTime.now().add(const Duration(days: 730)),
+                            );
+                            if (picked != null) {
+                              setSheetState(() => alarmDate = picked);
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.schedule_rounded, size: 18),
+                          label: Text(alarmTime.format(ctx), style: const TextStyle(fontSize: 12.5)),
+                          onPressed: () async {
+                            final picked = await showTimePicker(context: ctx, initialTime: alarmTime);
+                            if (picked != null) {
+                              setSheetState(() => alarmTime = picked);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Sound & Notification Alarm', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                      soundEnabled ? 'Alarm ringtone & system notification' : 'Silent banner notification',
+                      style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54),
+                    ),
+                    secondary: Icon(
+                      soundEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                      color: soundEnabled ? AppTheme.orange : Colors.grey,
+                    ),
+                    value: soundEnabled,
+                    onChanged: (val) => setSheetState(() => soundEnabled = val),
+                  ),
+                  const SizedBox(height: 20),
+                  GradientButton(
+                    label: 'Schedule Alarm',
+                    icon: Icons.notifications_active_rounded,
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: result));
-                      Navigator.pop(ctx);
+                      final title = titleController.text.trim();
+                      if (title.isEmpty) return;
+
+                      final targetDateTime = DateTime(
+                        alarmDate.year,
+                        alarmDate.month,
+                        alarmDate.day,
+                        alarmTime.hour,
+                        alarmTime.minute,
+                      );
+
+                      final reminder = Reminder(
+                        id: const Uuid().v4(),
+                        title: title,
+                        company: _app.company,
+                        dateTime: targetDateTime,
+                        type: ReminderType.interviewAlarm,
+                        isEnabled: true,
+                        isSoundEnabled: soundEnabled,
+                        applicationId: _app.id,
+                      );
+
+                      context.read<ReminderController>().addReminder(reminder);
+                      Navigator.pop(sheetCtx);
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Text('AI result copied to clipboard!'),
+                          content: Row(
+                            children: [
+                              const Icon(Icons.alarm_on_rounded, color: Colors.white, size: 18),
+                              const SizedBox(width: 8),
+                              Text('Alarm scheduled for ${DateFormat('hh:mm a, MMM d').format(targetDateTime)}!'),
+                            ],
+                          ),
+                          backgroundColor: const Color(0xFF10B981),
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       );
                     },
-                    icon: const Icon(Icons.copy_rounded, size: 18),
-                    label: const Text('Copy Output', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryYellow,
-                      foregroundColor: AppTheme.accentBlack,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            SizedBox(height: MediaQuery.of(ctx).padding.bottom + 10),
-          ],
+          ),
         ),
       ),
     );
   }
 
+  // --- AI Reasoning Action Runner ---
+  Future<void> _runAIAction(String actionTitle, String prompt) async {
+    setState(() => _isGeneratingAI = true);
+
+    final aiController = context.read<AIController>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    try {
+      final result = await aiController.chatWithCareerCoach(prompt, [_app]);
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (ctx) => Material(
+          color: isDark ? AppTheme.darkCard : AppTheme.white,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: isDark ? AppTheme.borderDark : AppTheme.borderLight),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.orange.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.bolt_rounded, color: AppTheme.orange, size: 20),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        actionTitle,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.55,
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF151C2A) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark ? AppTheme.borderDark : AppTheme.borderLight,
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      result,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6, fontSize: 13.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.orange,
+                          side: const BorderSide(color: AppTheme.orange),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: result));
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('AI result copied to clipboard!'),
+                              backgroundColor: AppTheme.orange,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        label: const Text('Copy Output', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isGeneratingAI = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final catColor = _app.category.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Tailor labels based on category
     final dateLabel = _app.category == OpportunityCategory.hackathon
         ? 'Demo Day / Pitch Date'
         : (_app.category == OpportunityCategory.event
@@ -240,19 +602,24 @@ Tracked with Career Copilot
         ? 'Submission Deadline'
         : (_app.category == OpportunityCategory.event ? 'RSVP Deadline' : 'Application Deadline');
 
-    // Tailored pipeline step labels
+    // Pipeline step labels
     final step1Label = _app.category == OpportunityCategory.hackathon
         ? 'Registered'
-        : (_app.category == OpportunityCategory.event ? 'RSVP\'d' : (_app.category == OpportunityCategory.contest ? 'Signed Up' : 'Applied'));
+        : (_app.category == OpportunityCategory.event ? "RSVP'd" : 'Applied');
     final step2Label = _app.category == OpportunityCategory.hackathon
         ? 'Building'
-        : (_app.category == OpportunityCategory.event ? 'Waitlisted' : (_app.category == OpportunityCategory.contest ? 'Active' : 'Action Req'));
+        : (_app.category == OpportunityCategory.event ? 'Waitlisted' : 'Action Req');
     final step3Label = _app.category == OpportunityCategory.hackathon
         ? 'Demo Day'
-        : (_app.category == OpportunityCategory.event ? 'Attending' : (_app.category == OpportunityCategory.contest ? 'Finals' : 'Interview'));
+        : (_app.category == OpportunityCategory.event ? 'Attending' : 'Interview');
     final step4Label = _app.category == OpportunityCategory.hackathon
         ? 'Results'
-        : (_app.category == OpportunityCategory.event ? 'Completed' : (_app.category == OpportunityCategory.contest ? 'Ranked' : 'Waiting'));
+        : (_app.category == OpportunityCategory.event ? 'Completed' : 'Offer');
+
+    // Active reminders linked to this opportunity
+    final appReminders = context.watch<ReminderController>().reminders.where(
+      (r) => r.applicationId == _app.id,
+    ).toList();
 
     return Scaffold(
       extendBody: true,
@@ -260,7 +627,7 @@ Tracked with Career Copilot
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // Top Custom App Bar
+            // Top App Bar
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -270,7 +637,7 @@ Tracked with Career Copilot
                     Row(
                       children: [
                         Container(
-                          decoration: AppTheme.flatDecoration(context, borderRadius: 14),
+                          decoration: AppTheme.cardDecoration(context, borderRadius: 12),
                           child: IconButton(
                             icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).iconTheme.color, size: 18),
                             onPressed: () => Navigator.pop(context),
@@ -283,7 +650,20 @@ Tracked with Career Copilot
                     Row(
                       children: [
                         Container(
-                          decoration: AppTheme.flatDecoration(context, borderRadius: 14),
+                          decoration: AppTheme.cardDecoration(context, borderRadius: 12),
+                          child: IconButton(
+                            icon: Icon(
+                              appReminders.isNotEmpty ? Icons.alarm_on_rounded : Icons.alarm_add_rounded,
+                              color: appReminders.isNotEmpty ? const Color(0xFF10B981) : AppTheme.orange,
+                              size: 20,
+                            ),
+                            tooltip: 'Set Alarm / Reminder',
+                            onPressed: _openSetAlarmSheet,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          decoration: AppTheme.cardDecoration(context, borderRadius: 12),
                           child: IconButton(
                             icon: const Icon(Icons.share_rounded, color: AppTheme.orange, size: 20),
                             tooltip: 'Share / Copy Summary',
@@ -292,7 +672,7 @@ Tracked with Career Copilot
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          decoration: AppTheme.flatDecoration(context, borderRadius: 14),
+                          decoration: AppTheme.cardDecoration(context, borderRadius: 12),
                           child: IconButton(
                             icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.statusRedText, size: 20),
                             tooltip: 'Delete',
@@ -313,13 +693,13 @@ Tracked with Career Copilot
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Flat Header Card
+                    // Hero Glass Card
                     Container(
                       padding: const EdgeInsets.all(22),
-                      decoration: AppTheme.flatDecoration(
+                      decoration: AppTheme.cardDecoration(
                         context,
-                        borderRadius: 28,
-                        borderColor: catColor.withValues(alpha: 0.3),
+                        borderRadius: 24,
+                        borderColor: catColor.withValues(alpha: 0.35),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +711,7 @@ Tracked with Career Copilot
                               CompanyLogoWidget(
                                 company: _app.company,
                                 category: _app.category,
-                                size: 52,
+                                size: 54,
                                 borderRadius: 18,
                                 showCategoryBadge: true,
                               ),
@@ -344,20 +724,27 @@ Tracked with Career Copilot
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
                                           color: catColor.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(color: catColor.withValues(alpha: 0.3)),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: catColor.withValues(alpha: 0.35)),
                                         ),
-                                        child: Text(
-                                          _app.category.label.toUpperCase(),
-                                          style: TextStyle(
-                                            color: catColor,
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(_app.category.icon, size: 12, color: catColor),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              _app.category.label.toUpperCase(),
+                                              style: TextStyle(
+                                                color: catColor,
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       const SizedBox(width: 8),
@@ -381,83 +768,140 @@ Tracked with Career Copilot
                             _app.role,
                             style: TextStyle(
                               color: catColor,
-                              fontSize: 16,
+                              fontSize: 16.5,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          if (_app.stipend.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: catColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: catColor.withValues(alpha: 0.2)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _app.category == OpportunityCategory.hackathon || _app.category == OpportunityCategory.contest
-                                        ? Icons.emoji_events_rounded
-                                        : Icons.payments_outlined,
-                                    size: 14,
-                                    color: catColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _app.stipend,
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                          color: catColor,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          const SizedBox(height: 14),
+                          // Badges Row
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (_app.stipend.isNotEmpty)
+                                _buildBadgePill(
+                                  context,
+                                  icon: _app.category == OpportunityCategory.hackathon || _app.category == OpportunityCategory.contest
+                                      ? Icons.emoji_events_rounded
+                                      : Icons.payments_outlined,
+                                  text: _app.stipend,
+                                  color: catColor,
+                                ),
+                              if (_app.location.isNotEmpty)
+                                _buildBadgePill(
+                                  context,
+                                  icon: Icons.location_on_rounded,
+                                  text: _app.location,
+                                  color: AppTheme.vibrantBlue,
+                                ),
+                              if (_app.workMode.isNotEmpty)
+                                _buildBadgePill(
+                                  context,
+                                  icon: Icons.laptop_mac_rounded,
+                                  text: _app.workMode,
+                                  color: AppTheme.vibrantPurple,
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.05, end: 0),
+                    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.04, end: 0),
 
                     const SizedBox(height: 24),
 
-                    // Pipeline Status Switcher
+                    // Connected Pipeline Progress Stepper
                     Text(
                       _app.category == OpportunityCategory.hackathon
                           ? 'Hackathon Progress Stage'
                           : (_app.category == OpportunityCategory.event
-                              ? 'Event Registration Stage'
-                              : (_app.category == OpportunityCategory.contest
-                                  ? 'Contest Status'
-                                  : 'Application Pipeline Stage')),
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ? 'Event Attendance Stage'
+                              : 'Pipeline Progress Stage'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
-                      decoration: AppTheme.flatDecoration(context),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      decoration: AppTheme.cardDecoration(context, borderRadius: 20),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildPipelineStep(context, step1Label, ApplicationStatus.applied, Icons.send_rounded),
-                          _buildPipelineStep(context, step2Label, ApplicationStatus.actionRequired, Icons.assignment_late_rounded),
-                          _buildPipelineStep(context, step3Label, ApplicationStatus.interview, Icons.video_call_rounded),
-                          _buildPipelineStep(context, step4Label, ApplicationStatus.waiting, Icons.hourglass_top_rounded),
+                          Expanded(
+                            child: _buildConnectedStep(
+                              context,
+                              label: step1Label,
+                              status: ApplicationStatus.applied,
+                              icon: Icons.send_rounded,
+                              stepNumber: 1,
+                            ),
+                          ),
+                          _buildConnectorLine(context, isCompleted: _isStepPassed(1)),
+                          Expanded(
+                            child: _buildConnectedStep(
+                              context,
+                              label: step2Label,
+                              status: ApplicationStatus.actionRequired,
+                              icon: Icons.assignment_late_rounded,
+                              stepNumber: 2,
+                            ),
+                          ),
+                          _buildConnectorLine(context, isCompleted: _isStepPassed(2)),
+                          Expanded(
+                            child: _buildConnectedStep(
+                              context,
+                              label: step3Label,
+                              status: ApplicationStatus.interview,
+                              icon: Icons.video_call_rounded,
+                              stepNumber: 3,
+                            ),
+                          ),
+                          _buildConnectorLine(context, isCompleted: _isStepPassed(3)),
+                          Expanded(
+                            child: _buildConnectedStep(
+                              context,
+                              label: step4Label,
+                              status: ApplicationStatus.waiting,
+                              icon: Icons.emoji_events_rounded,
+                              stepNumber: 4,
+                            ),
+                          ),
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 24),
 
-                    // Key Dates & Logistics Card
-                    Text(
-                      'Timeline & Key Dates',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    // Timeline & Alarms Card
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Timeline & Key Dates',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        GestureDetector(
+                          onTap: _openSetAlarmSheet,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppTheme.orange.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.alarm_add_rounded, size: 14, color: AppTheme.orange),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Add Alarm',
+                                  style: TextStyle(color: AppTheme.orange, fontSize: 11.5, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
-                      decoration: AppTheme.flatDecoration(context),
+                      decoration: AppTheme.cardDecoration(context, borderRadius: 20),
                       padding: const EdgeInsets.all(18),
                       child: Column(
                         children: [
@@ -466,7 +910,7 @@ Tracked with Career Copilot
                             Icons.calendar_month_rounded,
                             dateLabel,
                             _app.interviewDate.isNotEmpty
-                                ? '${_app.interviewDate} at ${_app.interviewTime}'
+                                ? '${_app.interviewDate}${_app.interviewTime.isNotEmpty ? ' at ${_app.interviewTime}' : ''}'
                                 : 'Not yet scheduled',
                             catColor,
                           ),
@@ -475,56 +919,126 @@ Tracked with Career Copilot
                             context,
                             Icons.access_time_rounded,
                             deadlineLabel,
-                            _app.deadline.isNotEmpty ? _app.deadline : 'No hard deadline provided',
-                            AppTheme.statusAmberText,
+                            _app.deadline.isNotEmpty ? _app.deadline : 'No deadline provided',
+                            AppTheme.orange,
                           ),
                           Divider(color: Theme.of(context).dividerColor, height: 24),
                           _buildInfoRow(
                             context,
                             Icons.location_on_rounded,
                             'Location / Format',
-                            _app.location.isNotEmpty ? _app.location : 'Remote / Global',
-                            AppTheme.orange,
+                            _app.location.isNotEmpty ? '${_app.location} (${_app.workMode})' : 'Remote / Global',
+                            AppTheme.vibrantBlue,
                           ),
+                          if (appReminders.isNotEmpty) ...[
+                            Divider(color: Theme.of(context).dividerColor, height: 24),
+                            ...appReminders.map(
+                              (rem) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.alarm_on_rounded, color: Color(0xFF10B981), size: 16),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        'Alarm: ${DateFormat('hh:mm a, MMM d').format(rem.dateTime)}',
+                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 16, color: Colors.grey),
+                                      onPressed: () => context.read<ReminderController>().deleteReminder(rem.id),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
 
-                    // Document Checklist
-                    if (_app.requiredDocuments.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        _app.category == OpportunityCategory.hackathon
-                            ? 'Submission Deliverables'
-                            : 'Required Documents',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        decoration: AppTheme.flatDecoration(context),
-                        padding: const EdgeInsets.all(16),
-                        child: DocumentChecklist(
-                          documents: _app.requiredDocuments,
-                          onToggle: _toggleDocument,
-                        ),
-                      ),
-                    ],
-
+                    // Deliverables / Documents Checklist
                     const SizedBox(height: 24),
-
-                    // AI Copilot Actions
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.bolt_rounded, color: catColor, size: 20),
-                        const SizedBox(width: 8),
                         Text(
-                          'AI Copilot Tools',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          _app.category == OpportunityCategory.hackathon
+                              ? 'Deliverables & Checklist'
+                              : 'Required Documents',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        GestureDetector(
+                          onTap: _addDeliverableDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: catColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_rounded, size: 15, color: catColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Add Item',
+                                  style: TextStyle(color: catColor, fontSize: 11.5, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
+                    Container(
+                      decoration: AppTheme.cardDecoration(context, borderRadius: 20),
+                      padding: const EdgeInsets.all(16),
+                      child: _app.requiredDocuments.isNotEmpty
+                          ? DocumentChecklist(
+                              documents: _app.requiredDocuments,
+                              onToggle: _toggleDocument,
+                            )
+                          : Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  'No deliverables added. Tap "+ Add Item" above.',
+                                  style: TextStyle(fontSize: 13, color: isDark ? Colors.white54 : Colors.black45),
+                                ),
+                              ),
+                            ),
+                    ),
 
+                    // AI Copilot Live Tools
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded, color: AppTheme.orange, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AI Copilot Tools',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        if (_isGeneratingAI) ...[
+                          const SizedBox(width: 12),
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.orange),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -533,13 +1047,13 @@ Tracked with Career Copilot
                             title: _app.category == OpportunityCategory.hackathon
                                 ? 'Pitch & Strategy'
                                 : (_app.category == OpportunityCategory.event
-                                    ? 'Networking Guide'
-                                    : (_app.category == OpportunityCategory.contest ? 'Contest Tactics' : 'Interview Prep')),
+                                    ? 'Networking Plan'
+                                    : (_app.category == OpportunityCategory.contest ? 'Contest Tactics' : 'Interview Q&A')),
                             desc: _app.category == OpportunityCategory.hackathon
                                 ? 'Pitch hook, USP & demo script'
                                 : (_app.category == OpportunityCategory.event
-                                    ? 'Questions & networking plan'
-                                    : (_app.category == OpportunityCategory.contest ? 'Time split & debug checklist' : 'Top 5 questions & answers')),
+                                    ? 'Questions & networking guide'
+                                    : (_app.category == OpportunityCategory.contest ? 'Speed tactics & debug steps' : 'Role-specific prep & questions')),
                             icon: _app.category == OpportunityCategory.hackathon
                                 ? Icons.lightbulb_rounded
                                 : (_app.category == OpportunityCategory.event
@@ -547,78 +1061,8 @@ Tracked with Career Copilot
                                     : (_app.category == OpportunityCategory.contest ? Icons.speed_rounded : Icons.quiz_rounded)),
                             color: catColor,
                             onTap: () {
-                              if (_app.category == OpportunityCategory.hackathon) {
-                                _runAIAction(
-                                  'Hackathon Strategy for ${_app.company}',
-                                  '''Hackathon Pitch & Architecture Strategy for ${_app.company} (${_app.role}):
-
-1. Problem Hook (30 sec):
-   - "Developers and teams face massive friction in collaboration and manual tracking across modern platforms."
-
-2. Unique Value Proposition & Tech Stack:
-   - "Our project provides an autonomous, real-time sync pipeline that slashes latency by 80% with offline-first support."
-   - Target Tech: Flutter + Offline Engine + WebSocket streaming.
-
-3. 3-Minute Live Demo Outline:
-   - Minute 1: The real-world problem and workflow failure.
-   - Minute 2: Live execution showing the breakthrough feature in action.
-   - Minute 3: Scalability, architecture diagram, and judge Q&A prep.
-''',
-                                );
-                              } else if (_app.category == OpportunityCategory.event) {
-                                _runAIAction(
-                                  'Networking & Keynote Plan for ${_app.company}',
-                                  '''Event Networking & Insights Plan for ${_app.company} (${_app.role}):
-
-1. Target Topics & Questions to Ask:
-   - "What are the biggest production hurdles your engineering team faced while scaling this year?"
-   - "Where do you see the intersection of open-source tooling and proprietary AI agents heading in the next 12 months?"
-
-2. 30-Second Introduction Hook:
-   - "Hi! I'm Laksh, a software engineer passionate about building high-performance tooling and developer platforms."
-
-3. Post-Event Follow-up Plan:
-   - Connect on LinkedIn within 24 hours citing the specific discussion point.
-''',
-                                );
-                              } else if (_app.category == OpportunityCategory.contest) {
-                                _runAIAction(
-                                  'Contest Strategy for ${_app.company}',
-                                  '''Competitive Programming Strategy for ${_app.company} (${_app.role}):
-
-1. Time Allocation Budget:
-   - First 5 mins: Read all problems, rank by difficulty and familiarity.
-   - Problem A/B: Rapid implementation (< 15 mins total).
-   - Problem C/D: Core algorithmic focus (Graphs, DP, Trees). Spend 35-45 mins.
-
-2. Pre-Submission Edge-Case Checklist:
-   - Integer overflow (use 64-bit int / BigInt).
-   - Empty input or N = 1 boundaries.
-   - Worst-case time complexity vs constraints: 10^5 -> O(N log N).
-
-3. Debugging Protocol:
-   - If TLE: Check redundant loops and fast I/O.
-   - If WA: Print intermediate state on a mini counter-example.
-''',
-                                );
-                              } else {
-                                _runAIAction(
-                                  'Interview Questions for ${_app.role}',
-                                  '''Tailored Interview Questions for ${_app.company} (${_app.role}):
-
-1. Technical Focus:
-   - "How would you design a scalable system that handles high concurrency and prevents deadlocks?"
-   - "Explain a time when you optimized a slow query or bottleneck in your application."
-
-2. Behavioral & Cultural:
-   - "Why do you want to join ${_app.company} specifically over other top companies in this space?"
-   - "Describe an ambiguous problem where you took initiative without waiting for explicit instructions."
-
-3. Role Specific:
-   - "What technologies would you choose for modern production web/mobile architecture and why?"
-''',
-                                );
-                              }
+                              final prompt = 'Generate comprehensive interview questions, behavioral guidance, and technical focus areas for ${_app.company} (${_app.role}).';
+                              _runAIAction('Interview Prep for ${_app.company}', prompt);
                             },
                           ),
                         ),
@@ -629,13 +1073,13 @@ Tracked with Career Copilot
                             title: _app.category == OpportunityCategory.hackathon
                                 ? 'Mentor Outreach'
                                 : (_app.category == OpportunityCategory.event
-                                    ? 'Speaker Message'
-                                    : (_app.category == OpportunityCategory.contest ? 'Teammate Brief' : 'Email Draft')),
+                                    ? 'Speaker Connect'
+                                    : (_app.category == OpportunityCategory.contest ? 'Team Brief' : 'Follow-up Draft')),
                             desc: _app.category == OpportunityCategory.hackathon
-                                ? 'Sponsor & mentor inquiry'
+                                ? 'Sponsor & mentor email'
                                 : (_app.category == OpportunityCategory.event
-                                    ? 'Host / speaker conversation'
-                                    : (_app.category == OpportunityCategory.contest ? 'Team assignment message' : 'Interview confirmation draft')),
+                                    ? 'Speaker inquiry message'
+                                    : (_app.category == OpportunityCategory.contest ? 'Team division message' : 'Confirmation & thank you note')),
                             icon: _app.category == OpportunityCategory.hackathon
                                 ? Icons.handshake_rounded
                                 : (_app.category == OpportunityCategory.event
@@ -643,114 +1087,54 @@ Tracked with Career Copilot
                                     : (_app.category == OpportunityCategory.contest ? Icons.diversity_3_rounded : Icons.mark_email_read_rounded)),
                             color: catColor,
                             onTap: () {
-                              if (_app.category == OpportunityCategory.hackathon) {
-                                _runAIAction(
-                                  'Mentor Outreach Draft',
-                                  '''Subject: Mentorship Request: Project for ${_app.role} - ${_app.company}
-
-Hi ${_app.company} Mentors,
-
-Our team is actively building an ambitious project for the ${_app.role} track at ${_app.company}. We are incorporating your APIs and would love 5 minutes of your feedback on our data pipeline architecture and edge deployment.
-
-Could we connect briefly at the mentoring lounge or via the hackathon Discord?
-
-Best regards,
-Laksh
-''',
-                                );
-                              } else if (_app.category == OpportunityCategory.event) {
-                                _runAIAction(
-                                  'Speaker / Organizer Connect Draft',
-                                  '''Subject: Attending ${_app.company} (${_app.role}) - Quick Question
-
-Hi ${_app.company} Team,
-
-I'm looking forward to attending ${_app.company}'s session on ${_app.role}. I've been actively exploring your tooling in high-performance architectures and hope to connect during the networking breakout!
-
-Best,
-Laksh
-''',
-                                );
-                              } else if (_app.category == OpportunityCategory.contest) {
-                                _runAIAction(
-                                  'Teammate Briefing Draft',
-                                  '''Subject: ${_app.company} ${_app.role} Strategy & Topic Split
-
-Team,
-
-Here is our division for the upcoming ${_app.company} (${_app.role}):
-- Teammate 1: Implementation & fast math / geometry problems
-- Teammate 2: Graph theory & Dynamic Programming
-- Teammate 3: Edge testing, Stress testing, and fast debugging
-
-Let's do a 20-minute sync beforehand to verify all templates and compiler environments!
-''',
-                                );
-                              } else {
-                                _runAIAction(
-                                  'Interview Confirmation Draft',
-                                  '''Subject: Confirmation: Interview for ${_app.role} - ${_app.company}
-
-Dear Hiring Team at ${_app.company},
-
-Thank you very much for inviting me to interview for the ${_app.role} position. 
-
-I am excited to confirm my availability for our upcoming conversation ${_app.interviewDate.isNotEmpty ? "on ${_app.interviewDate}" : ""}. I look forward to learning more about the team's upcoming initiatives and demonstrating how my technical background aligns with your engineering goals.
-
-Please let me know if you need any additional portfolio links or documents prior to our call.
-
-Sincerely,
-Laksh
-''',
-                                );
-                              }
+                              final prompt = 'Draft a professional, concise email confirmation and thank you message for the ${_app.role} opportunity at ${_app.company}.';
+                              _runAIAction('Outreach Draft for ${_app.company}', prompt);
                             },
                           ),
                         ),
                       ],
                     ),
 
+                    // Personal Notes
                     const SizedBox(height: 24),
-
-                    // Personal Notes Section
                     Text(
-                      'Personal Notes & Prep',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      'Personal Notes & Recruiter Contacts',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 12),
                     Container(
-                      decoration: AppTheme.flatDecoration(context),
-                      padding: const EdgeInsets.all(16),
+                      decoration: AppTheme.cardDecoration(context, borderRadius: 20),
+                      padding: const EdgeInsets.all(18),
                       child: Column(
                         children: [
                           TextField(
                             controller: _notesController,
                             maxLines: 4,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.4),
+                            style: const TextStyle(fontSize: 14, height: 1.5),
                             decoration: InputDecoration(
-                              hintText: 'Add recruiter contacts, salary negotiations, or round notes...',
-                              hintStyle: Theme.of(context).textTheme.bodySmall,
+                              hintText: 'Add recruiter contacts, salary negotiations, or interview notes...',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? Colors.white38 : Colors.black38,
+                              ),
                               border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
                               contentPadding: EdgeInsets.zero,
-                              fillColor: Colors.transparent,
                             ),
                           ),
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
                             child: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _app.category.color.withValues(alpha: 0.18),
-                                foregroundColor: _app.category.color,
+                                backgroundColor: AppTheme.orange,
+                                foregroundColor: Colors.white,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                               ),
                               onPressed: _saveNotes,
                               icon: const Icon(Icons.check_rounded, size: 16),
-                              label: const Text('Save Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              label: const Text('Save Notes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                             ),
                           ),
                         ],
@@ -766,40 +1150,132 @@ Laksh
     );
   }
 
-  Widget _buildPipelineStep(BuildContext context, String label, ApplicationStatus status, IconData icon) {
+  bool _isStepPassed(int stepIndex) {
+    final currentVal = _stepValue(_app.status);
+    return currentVal > stepIndex;
+  }
+
+  int _stepValue(ApplicationStatus status) {
+    switch (status) {
+      case ApplicationStatus.applied:
+        return 1;
+      case ApplicationStatus.actionRequired:
+        return 2;
+      case ApplicationStatus.interview:
+        return 3;
+      case ApplicationStatus.waiting:
+        return 4;
+    }
+  }
+
+  Widget _buildConnectedStep(
+    BuildContext context, {
+    required String label,
+    required ApplicationStatus status,
+    required IconData icon,
+    required int stepNumber,
+  }) {
     final isCurrent = _app.status == status;
+    final isPassed = _isStepPassed(stepNumber);
     final catColor = _app.category.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () => _updateStatus(status),
       child: Column(
         children: [
           AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(10),
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isCurrent ? catColor : Theme.of(context).dividerColor,
+              color: isCurrent
+                  ? catColor
+                  : (isPassed ? catColor.withValues(alpha: 0.25) : (isDark ? const Color(0xFF1E2332) : const Color(0xFFE2E8F0))),
               border: Border.all(
-                color: isCurrent ? Colors.transparent : Theme.of(context).dividerColor,
+                color: isCurrent
+                    ? Colors.white.withValues(alpha: 0.6)
+                    : (isPassed ? catColor : (isDark ? AppTheme.borderDark : AppTheme.borderLight)),
+                width: isCurrent ? 2 : 1,
               ),
+              boxShadow: isCurrent
+                  ? [
+                      BoxShadow(
+                        color: catColor.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
             ),
             child: Icon(
-              icon,
-              size: 20,
-              color: isCurrent ? AppTheme.accentBlack : Theme.of(context).textTheme.bodySmall?.color,
+              isPassed ? Icons.check_rounded : icon,
+              size: 16,
+              color: isCurrent
+                  ? Colors.white
+                  : (isPassed ? catColor : (isDark ? Colors.white54 : Colors.black54)),
             ),
           ),
           const SizedBox(height: 6),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: TextStyle(
-                color: isCurrent ? catColor : Theme.of(context).textTheme.bodySmall?.color,
-                fontSize: 11,
-                fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-              ),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isCurrent
+                  ? catColor
+                  : (isDark ? Colors.white70 : Colors.black87),
+              fontSize: 11,
+              fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConnectorLine(BuildContext context, {required bool isCompleted}) {
+    final catColor = _app.category.color;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: Container(
+        height: 2.5,
+        margin: const EdgeInsets.only(bottom: 22),
+        decoration: BoxDecoration(
+          color: isCompleted
+              ? catColor
+              : (isDark ? AppTheme.borderDark : AppTheme.borderLight),
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadgePill(
+    BuildContext context, {
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],
@@ -811,23 +1287,23 @@ Laksh
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
             color: accentColor.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(icon, color: accentColor, size: 20),
+          child: Icon(icon, color: accentColor, size: 19),
         ),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: Theme.of(context).textTheme.bodySmall),
+              Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11.5)),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 13.5),
               ),
             ],
           ),
@@ -844,31 +1320,38 @@ Laksh
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: _isGeneratingAI ? null : onTap,
       child: Container(
-        decoration: AppTheme.flatDecoration(context),
+        decoration: AppTheme.cardDecoration(context, borderRadius: 18),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(12),
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
               ),
-              child: Icon(icon, color: AppTheme.accentBlack, size: 20),
+              child: Icon(icon, color: color, size: 19),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 14),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800, fontSize: 13.5),
             ),
             const SizedBox(height: 4),
             Text(
               desc,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 11, height: 1.3),
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? Colors.white60 : Colors.black54,
+                height: 1.3,
+              ),
             ),
           ],
         ),

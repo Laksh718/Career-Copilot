@@ -166,9 +166,9 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryYellow.withValues(alpha: 0.12),
+                        color: AppTheme.orange.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppTheme.primaryYellow.withValues(alpha: 0.2)),
+                        border: Border.all(color: AppTheme.orange.withValues(alpha: 0.25)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -177,7 +177,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                             width: 8,
                             height: 8,
                             decoration: const BoxDecoration(
-                              color: AppTheme.primaryYellow,
+                              color: AppTheme.orange,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -185,7 +185,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                           const Text(
                             'AI Parsed',
                             style: TextStyle(
-                              color: AppTheme.primaryYellow,
+                              color: AppTheme.orange,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -208,10 +208,10 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.flatDecoration(
+                      decoration: AppTheme.cardDecoration(
                         context,
                         borderRadius: AppTheme.radiusLg,
-                        borderColor: catColor.withValues(alpha: 0.3),
+                        borderColor: catColor.withValues(alpha: 0.35),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,7 +283,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                         padding: const EdgeInsets.only(bottom: 14),
                         child: Container(
                           padding: const EdgeInsets.all(16),
-                          decoration: AppTheme.flatDecoration(context, borderRadius: AppTheme.radiusLg, borderColor: f.color.withValues(alpha: 0.2)),
+                          decoration: AppTheme.cardDecoration(context, borderRadius: AppTheme.radiusLg, borderColor: f.color.withValues(alpha: 0.25)),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -314,8 +314,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                                       controller: f.controller,
                                       style: TextStyle(
                                         color: Theme.of(context).textTheme.bodyMedium?.color,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                       decoration: InputDecoration(
                                         border: InputBorder.none,
@@ -341,7 +341,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                         widget.extraction.requiredDocuments!.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.flatDecoration(context, borderRadius: AppTheme.radiusLg, borderColor: AppTheme.primaryYellow.withValues(alpha: 0.2)),
+                        decoration: AppTheme.cardDecoration(context, borderRadius: AppTheme.radiusLg, borderColor: AppTheme.orange.withValues(alpha: 0.25)),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -350,16 +350,16 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryYellow.withValues(alpha: 0.12),
+                                    color: AppTheme.orange.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(Icons.description_rounded, color: AppTheme.primaryYellow, size: 20),
+                                  child: const Icon(Icons.description_rounded, color: AppTheme.orange, size: 20),
                                 ),
                                 const SizedBox(width: 14),
                                 const Text(
                                   'REQUIRED DOCUMENTS',
                                   style: TextStyle(
-                                    color: AppTheme.primaryYellow,
+                                    color: AppTheme.orange,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 0.5,
@@ -374,9 +374,9 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                                 child: Row(
                                   children: [
                                     const SizedBox(width: 44),
-                                    const Icon(Icons.check_circle_rounded, size: 18, color: AppTheme.primaryYellow),
+                                    const Icon(Icons.check_circle_rounded, size: 18, color: AppTheme.orange),
                                     const SizedBox(width: 10),
-                                    Text(d, style: const TextStyle(fontSize: 15)),
+                                    Text(d, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ),

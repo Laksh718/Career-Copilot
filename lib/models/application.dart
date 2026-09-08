@@ -4,6 +4,29 @@ import 'required_document.dart';
 
 enum ApplicationStatus { applied, interview, actionRequired, waiting }
 
+extension ApplicationStatusX on ApplicationStatus {
+  String get label => switch (this) {
+        ApplicationStatus.applied => 'Applied',
+        ApplicationStatus.actionRequired => 'Action Required',
+        ApplicationStatus.interview => 'Interview',
+        ApplicationStatus.waiting => 'Waiting',
+      };
+
+  Color get color => switch (this) {
+        ApplicationStatus.applied => AppTheme.vibrantBlue,
+        ApplicationStatus.actionRequired => AppTheme.vibrantRed,
+        ApplicationStatus.interview => AppTheme.vibrantOrange,
+        ApplicationStatus.waiting => AppTheme.vibrantPurple,
+      };
+
+  IconData get icon => switch (this) {
+        ApplicationStatus.applied => Icons.send_rounded,
+        ApplicationStatus.actionRequired => Icons.assignment_late_rounded,
+        ApplicationStatus.interview => Icons.video_call_rounded,
+        ApplicationStatus.waiting => Icons.hourglass_top_rounded,
+      };
+}
+
 enum OpportunityCategory {
   job,
   hackathon,
