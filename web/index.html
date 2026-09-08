@@ -19,6 +19,9 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Track jobs, hackathons, and tech events with AI extraction, smart reminders, and liquid glass aesthetics.">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -33,6 +36,49 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body style="margin: 0; background-color: #0B0F19; overflow: hidden;">
+  <!-- Starting Download Android App Popup for GitHub Pages -->
+  <div id="android-app-popup" style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999999; width: calc(100% - 32px); max-width: 480px; background: rgba(13, 18, 29, 0.96); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1.5px solid rgba(255, 107, 0, 0.45); border-radius: 20px; padding: 14px 18px; box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 28px rgba(255, 107, 0, 0.25); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #FF9500, #FF5722); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 14px rgba(255, 87, 34, 0.45);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 0 0-.1521-.5676.416.416 0 0 0-.5676.1521l-2.0223 3.503C15.5902 7.3788 13.8533 7.15 12 7.15c-1.8533 0-3.5902.2288-5.1367.7997L4.841 4.4467a.4161.4161 0 0 0-.5677-.1521.4157.4157 0 0 0-.1521.5676l1.9973 3.4592C2.6889 10.2743.3432 13.4326 0 17.2023h24c-.3432-3.7697-2.6889-6.928-6.1185-8.8809"/></svg>
+        </div>
+        <div style="min-width: 0;">
+          <div style="font-size: 13.5px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Download Android App</div>
+          <div style="font-size: 11px; color: #94A3B8; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">For 1-tap share ingestion & smart alarms</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <a href="Career-Copilot.apk" download="Career-Copilot.apk" style="display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #FF6B00, #FF3D00); color: #FFFFFF; font-size: 12px; font-weight: 700; text-decoration: none; padding: 8px 14px; border-radius: 10px; box-shadow: 0 4px 14px rgba(255, 107, 0, 0.45); white-space: nowrap;">Download APK</a>
+        <button onclick="dismissAndroidPopup()" aria-label="Close" style="background: rgba(255,255,255,0.08); border: none; color: #94A3B8; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function checkAndroidPopup() {
+      if (!sessionStorage.getItem('dismissed_android_popup')) {
+        var el = document.getElementById('android-app-popup');
+        if (el) el.style.display = 'block';
+      }
+    }
+    function dismissAndroidPopup() {
+      var el = document.getElementById('android-app-popup');
+      if (el) el.style.display = 'none';
+      sessionStorage.setItem('dismissed_android_popup', 'true');
+    }
+    setTimeout(checkAndroidPopup, 600);
+
+    // Auto-update service worker to always fetch latest build
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.update();
+        }
+      });
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

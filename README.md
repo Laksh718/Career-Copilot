@@ -7,18 +7,32 @@
 
 <p align="center">
   <a href="https://laksh718.github.io/Career-Copilot/"><img src="https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00F5D4?style=for-the-badge&logo=github&logoColor=black" alt="Live Demo" /></a>
+  <a href="https://laksh718.github.io/Career-Copilot/Career-Copilot.apk"><img src="https://img.shields.io/badge/Download%20APK-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" /></a>
   <img src="https://img.shields.io/badge/Flutter-3.24+-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter" />
   <img src="https://img.shields.io/badge/Dart-3.5+-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart" />
-  <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Android%20%7C%20iOS%20%7C%20macOS-FF5722?style=for-the-badge" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Platform-Web%20%7C%20Android-FF5722?style=for-the-badge" alt="Platforms" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" />
 </p>
 
 ---
 
+## 📱 Download Android App (Recommended for Full Experience)
+
+> [!TIP]
+> **Get the Native Experience!** For 1-tap OS Share Sheet auto-ingestion (direct share from WhatsApp, Gmail, LinkedIn), persistent audible alarms, and 120Hz liquid glass animations, download the native Android app:
+> 
+> 📲 **[Download Career Copilot Android APK (Direct Download)](https://laksh718.github.io/Career-Copilot/Career-Copilot.apk)**
+> 
+> - **Package**: `Career-Copilot.apk`
+> - **Highlights**: 1-Tap Share Target intake, Google Gemini AI Career Coach, local heuristic fallback, custom alarm sounds, and 100% offline data persistence.
+
+---
+
 ## 🌐 Live Web Experience
 
-Try the fully interactive web build deployed on GitHub Pages:
+Try the interactive web build directly in your browser on GitHub Pages:
 👉 **[https://laksh718.github.io/Career-Copilot/](https://laksh718.github.io/Career-Copilot/)**
+
 
 ---
 

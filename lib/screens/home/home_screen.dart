@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../../widgets/bottom_navigation.dart';
 import '../../widgets/application_card.dart';
 import '../../widgets/textured_background.dart';
 import '../../widgets/app_logo.dart';
+import '../../widgets/android_app_download_dialog.dart';
 
 import '../add_opportunity/add_opportunity_screen.dart';
 import '../add_opportunity/analysis_result_screen.dart';
@@ -32,6 +34,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final int _currentIndex = 0;
   OpportunityCategory? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AndroidAppDownloadDialog.showIfNeeded(context);
+      });
+    }
+  }
 
   void _onNavTap(int index) {
     if (index == 0) return;
@@ -311,30 +323,63 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 // Full brand logo on dark hero header
                                 const AppLogo(height: 44, width: 116),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: () => _onNavTap(5),
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.orange,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppTheme.orange.withValues(alpha: 0.4),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 3),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (kIsWeb) ...[
+                                      GestureDetector(
+                                        onTap: () => AndroidAppDownloadDialog.show(context),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: AppTheme.orange.withValues(alpha: 0.16),
+                                            border: Border.all(color: AppTheme.orange.withValues(alpha: 0.5)),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.android_rounded, color: AppTheme.orange, size: 16),
+                                              SizedBox(width: 5),
+                                              Text(
+                                                'Get APK',
+                                                style: TextStyle(
+                                                  color: AppTheme.orange,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ],
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        'L',
-                                        style: TextStyle(color: AppTheme.white, fontWeight: FontWeight.w800, fontSize: 16),
+                                      ),
+                                      const SizedBox(width: 10),
+                                    ],
+                                    GestureDetector(
+                                      onTap: () => _onNavTap(6),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.orange,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppTheme.orange.withValues(alpha: 0.4),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Center(
+                                          child: Text(
+                                            'L',
+                                            style: TextStyle(color: AppTheme.white, fontWeight: FontWeight.w800, fontSize: 16),
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ],
                             ),
